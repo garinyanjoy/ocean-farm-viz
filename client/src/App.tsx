@@ -10,6 +10,7 @@ import DataCenter from "./pages/DataCenter";
 import AdminManagement from "./pages/AdminManagement";
 import Profile from "./pages/Profile";
 import Home from "./pages/Home";
+import IntelligentCenter from "./pages/IntelligentCenter";
 
 const App: React.FC = () => {
   return (
@@ -17,14 +18,15 @@ const App: React.FC = () => {
       <Header />
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
+          <Route path="/" element={< Login/>} />
+          <Route path="/main-info" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/underwater" element={<UnderWaterSystem />} />
-          <Route path="/data" element={<DataCenter />} />
+          <Route path="/data-center" element={<DataCenter />} />
           <Route path="/admin" element={<AdminManagement />} />
+          <Route path="/intelligent" element={<IntelligentCenter />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </Container>
