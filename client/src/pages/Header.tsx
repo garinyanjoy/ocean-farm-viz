@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { BellOutlined } from '@ant-design/icons'; // 假设使用Ant Design图标库
+import { BellOutlined } from '@ant-design/icons';
+
 
 // 类型定义
 interface HeaderButton {
@@ -108,7 +109,7 @@ const AdminButton = styled.button`
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState<boolean>(true); // 假设存在一个状态来标识用户是否为管理员
+  const [isAdmin, setIsAdmin] = useState<boolean>(true); // 一个状态来标识用户是否为管理员
 
   // 导航按钮配置
   const navButtons: HeaderButton[] = [
