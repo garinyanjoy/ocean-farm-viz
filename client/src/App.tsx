@@ -4,11 +4,9 @@ import { Container } from "@mui/material";
 import Header from "./pages/Header";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
 import UnderWaterSystem from "./pages/UnderWaterSystem";
 import DataCenter from "./pages/DataCenter";
 import AdminManagement from "./pages/AdminManagement";
-import Profile from "./pages/Profile";
 import Home from "./pages/Home";
 import IntelligentCenter from "./pages/IntelligentCenter";
 
@@ -22,12 +20,10 @@ const App: React.FC = () => {
           <Route path="/main-info" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/underwater" element={<UnderWaterSystem />} />
           <Route path="/data-center" element={<DataCenter />} />
           <Route path="/admin" element={<AdminManagement />} />
           <Route path="/intelligent" element={<IntelligentCenter />} />
-          <Route path="/profile" element={<Profile />} />
         </Routes>
       </Container>
     </Router>
