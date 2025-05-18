@@ -1,13 +1,18 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+type User = {
+  username: string;
+  role: string;
+};
+
 type AuthContextType = {
-  authed: boolean;
-  login: () => void;
+  user: User | null;
+  login: (username: string, role: string) => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
-  authed: false,
+  user: null,
   login: () => {},
   logout: () => {},
 });
@@ -15,17 +20,21 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  const login = () => {
-    setAuthed(true);
+  const login = (username: string, role: string) => {
+    setUser({ username, role });
+    localStorage.setItem('auth', JSON.stringify({ username, role }));
   };
 
   const logout = () => {
-    setAuthed(false);
+    setUser(null);
+    localStorage.removeItem('auth');
   };
 
   return (
-    <AuthContext.Provider value={{ authed, login, logout }}></AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
