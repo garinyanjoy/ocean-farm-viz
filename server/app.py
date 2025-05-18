@@ -2,19 +2,17 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from database import db, User, HydroData, Fish
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import csv
 import io
 import os
 import pandas as pd
-import random
 from werkzeug.datastructures import FileStorage
 from math import isnan
 
 app = Flask(__name__)
-# 配置CORS，允许所有来源访问API
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 
 # Read database connection details from environment variables
 db_user = os.getenv('DB_USER', 'root')
@@ -82,10 +80,6 @@ def import_hydrodata_from_csv():
         imported_count = 0
 
         for _, row in df.iterrows():
-            # # 检查监测时间是否为null或无效值
-            # if pd.isna(row['监测时间']) or not isinstance(row['监测时间'], str):
-            #     print(f"警告：无效的监测时间值 {row['监测时间']}，跳过这一行。")
-            #     continue  # 跳过这一行
 
             date_str = row['监测时间'].split()[0]
             date = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -159,76 +153,6 @@ def import_fish_from_csv():
     except Exception as e:
         db.session.rollback()
         print(f"导入鱼类数据失败: {str(e)}")
-
-# 测试API - 返回简单数据确认API服务正常
-@app.route("/api/test", methods=["GET"])
-def api_test():
-    return jsonify({"status": "ok", "message": "API服务正常"})
-
-# 获取监控数据接口
-@app.route("/api/monitoring-data", methods=["GET"])
-def get_monitoring_data():
-    try:
-        # 从数据库获取最新的水质数据
-        latest_hydro = HydroData.query.order_by(HydroData.date.desc()).first()
-        
-        # 从数据库获取随机的鱼类数据作为示例
-        random_fish = Fish.query.order_by(db.func.rand()).first()
-        
-        # 如果没有找到数据，返回模拟数据
-        if not latest_hydro:
-            water_temp = round(random.uniform(15.0, 22.0), 1)
-            depth = round(random.uniform(12.0, 18.0), 1)
-            visibility = random.choice(['低', '中', '高'])
-        else:
-            # 使用实际水温数据，其他使用模拟数据
-            water_temp = latest_hydro.water_temperature or round(random.uniform(15.0, 22.0), 1)
-            depth = round(random.uniform(12.0, 18.0), 1)
-            visibility = random.choice(['低', '中', '高'])
-        
-        # 获取当前时间
-        current_time = datetime.now()
-        
-        # 构建监控数据响应
-        monitoring_data = {
-            "timestamp": current_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "camera_id": "CAM-01",
-            "location": "东海区域A",
-            "environment": {
-                "water_temperature": water_temp,
-                "depth": depth,
-                "visibility": visibility,
-                "dissolved_oxygen": latest_hydro.dissolved_oxygen if latest_hydro else round(random.uniform(5.0, 9.0), 1),
-                "pH": latest_hydro.pH if latest_hydro else round(random.uniform(6.5, 8.5), 1)
-            },
-            "fish_activity": {
-                "count": random.randint(10, 50),
-                "main_species": random_fish.species if random_fish else "鲈鱼",
-                "movement_level": random.choice(["活跃", "正常", "低活动"]),
-                "health_status": random.choice(["良好", "正常", "需关注"])
-            },
-            "alerts": []
-        }
-        
-        # 根据数据生成警报
-        if water_temp > 25.0:
-            monitoring_data["alerts"].append({
-                "type": "temperature",
-                "level": "warning",
-                "message": "水温偏高，可能影响鱼类生长"
-            })
-        
-        if latest_hydro and latest_hydro.dissolved_oxygen and latest_hydro.dissolved_oxygen < 5.0:
-            monitoring_data["alerts"].append({
-                "type": "oxygen",
-                "level": "critical",
-                "message": "溶解氧浓度过低，鱼类健康受到威胁"
-            })
-            
-        return jsonify(monitoring_data)
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     with app.app_context():
