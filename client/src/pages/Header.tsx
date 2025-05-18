@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { BellOutlined } from '@ant-design/icons';
+import { BellOutlined, SettingOutlined } from '@ant-design/icons';
 
 
 // 类型定义
@@ -96,6 +96,7 @@ const AdminButton = styled.button`
   font-size: 1.1rem;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -109,7 +110,8 @@ const AdminButton = styled.button`
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState<boolean>(true); // 一个状态来标识用户是否为管理员
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>('');
 
   // 导航按钮配置
   const navButtons: HeaderButton[] = [
@@ -130,6 +132,22 @@ const Header: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // 检查用户登录状态和角色
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole');
+    const storedUsername = localStorage.getItem('username');
+    
+    if (userRole === 'admin') {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+    }
+
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   // 处理导航点击
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -137,7 +155,9 @@ const Header: React.FC = () => {
 
   // 处理退出登录
   const handleLogout = () => {
-    // 这里可以添加退出登录逻辑
+    // 清除本地存储的登录信息
+    localStorage.removeItem('username');
+    localStorage.removeItem('userRole');
     navigate('/login');
   };
 
@@ -172,10 +192,14 @@ const Header: React.FC = () => {
       {/* 右侧功能区 */}
       <RightSection>
         <TimeDisplay>{currentTime}</TimeDisplay>
+        {username && <span>欢迎，{username}</span>}
         <LogoutButton onClick={handleLogout}>退出系统</LogoutButton>
-        <AdminButton onClick={handleAdminClick}>
-          <BellOutlined /> {}
-        </AdminButton>
+        {isAdmin && (
+          <AdminButton onClick={handleAdminClick}>
+            <SettingOutlined /> 
+            用户管理
+          </AdminButton>
+        )}
       </RightSection>
     </HeaderContainer>
   );
