@@ -6,15 +6,15 @@ import { InboxOutlined, EnvironmentOutlined } from '@ant-design/icons';
 const Container = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 0px;
+  gap: 16px;
   height: calc(100vh - 160px);
-  padding: 0px;
-  background: #f0f2f5;
+  padding: px;
+  background:rgb(255, 255, 255);
 `;
 
 // ========== 智能问答区域 ==========
 const ChatSection = styled.div`
-  background: white;
+  background:rgb(255, 255, 255);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -32,7 +32,7 @@ const ChatMessages = styled.div`
   overflow-y: auto;
   margin-bottom: 16px;
   padding: 8px;
-  border: 1px solid #e8e8e8;
+  border: 1px solidrgb(79, 128, 202);
   border-radius: 4px;
 `;
 
@@ -57,14 +57,14 @@ const ChatInputArea = styled.div`
   input {
     flex: 1;
     padding: 8px;
-    border: 1px solid #d9d9d9;
+    border: 1px solidrgb(47, 121, 168);
     border-radius: 4px;
   }
 `;
 
 // ========== 图片识别区域 ==========
 const ImageSection = styled.div`
-  background: white;
+  background:rgb(255, 255, 255);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -79,7 +79,7 @@ const PreviewImage = styled.img`
 `;
 
 const ResultBox = styled.div`
-  width: 100%;
+  width: 80%;
   padding: 10px;
   background: #fafafa;
   border-radius: 4px;
@@ -91,7 +91,7 @@ const ResultBox = styled.div`
 
 // ========== 天气区域 ==========
 const WeatherSection = styled.div`
-  background: white;
+  background:rgb(255, 255, 255);
   border-radius: 8px;
   padding: 16px;
 `;
@@ -282,20 +282,36 @@ const IntelligentCenter: React.FC = () => {
 
     setLoadingWeather(true);
     try {
-      const response = await fetch('/intelligent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'weather',
-          city: targetCity
-        })
-      });
-
+      // const response = await fetch('/intelligent', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     type: 'weather',
+      //     city: targetCity
+      //   })
+      // });
+      //   if (!response.ok) {
+      //     throw new Error('获取天气信息失败');
+      //   }
+      //   const data = await response.json();
+      //   if (data.type === 'weather') {
+      //     setWeatherData(data.data);
+      //   }
+      // } catch (error) {
+      //   message.error('获取天气失败');
+      // } finally {
+      //   setLoadingWeather(false);
+      // }
+      const apiKey = '16c686206982413cb7a51625251605 ';
+      const response = await fetch(`http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${targetCity}&aqi=no`);
+      if (!response.ok) {
+        throw new Error('获取天气信息失败');
+      }
       const data = await response.json();
-      if (data.type === 'weather') {
-        setWeatherData(data.data);
+      if (data.location && data.current) {
+        setWeatherData(data.current);
       }
     } catch (error) {
       message.error('获取天气失败');
@@ -326,7 +342,7 @@ const IntelligentCenter: React.FC = () => {
     temp_c: '这里是温度',
     humidity: '这里是湿度',
     wind_kph: '这里是风速',
-    condition: '这里是天气状况'
+    condition: { text: '这里是天气状况' }
   });
   }, []);
 
@@ -424,7 +440,7 @@ const IntelligentCenter: React.FC = () => {
               <p>温度: {weatherData.temp_c}°C</p>
               <p>湿度: {weatherData.humidity}%</p>
               <p>风速: {weatherData.wind_kph} km/h</p>
-              <p>天气状况: {weatherData.condition}</p>
+              <p>天气状况: {weatherData.condition.text}</p>
             </WeatherCard>
 
             <AlertBox>
