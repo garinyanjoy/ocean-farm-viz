@@ -242,24 +242,30 @@ const IntelligentCenter: React.FC = () => {
       async (position) => {
         try {
           // 通过后端代理获取城市信息
-          const response = await fetch(`/intelligent`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'location',
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            })
-          });
+          // const response = await fetch(`/intelligent`, {
+          //   method: 'POST',
+          //   headers: {
+          //     'Content-Type': 'application/json',
+          //   },
+          //   body: JSON.stringify({
+          //     type: 'location',
+          //     lat: position.coords.latitude,
+          //     lng: position.coords.longitude
+          //   })
+          // });
           
+          // const data = await response.json();
+          // if (data.type === 'location') {
+          //   setSelectedCity(data.city);
+          //   // 自动触发天气查询
+          //   handleGetWeather(data.city);
+          // }
+          const apiKey = '1ef2b09e54904ea6bf07404436dec7a5 ';
+          const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${position.coords.latitude}+${position.coords.longitude}&key=${apiKey}`);
           const data = await response.json();
-          if (data.type === 'location') {
-            setSelectedCity(data.city);
-            // 自动触发天气查询
-            handleGetWeather(data.city);
-          }
+          const city = data.results[0].components.city;
+          setSelectedCity(city);
+          handleGetWeather(city);
         } catch (error) {
           message.error('获取位置失败');
         } finally {
