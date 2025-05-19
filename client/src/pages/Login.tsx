@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login } = useAuth(); // 使用AuthContext中的login
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +24,9 @@ const Login: React.FC = () => {
 
       // 明确检查状态码
       if (response.status === 200) {
+        // 使用AuthContext提供的login函数
         login(response.data.username, response.data.role);
+        
         // 根据角色跳转
         const targetPath = response.data.role === 'admin' ? '/admin' : '/main-info';
         console.log('登录成功，跳转到:', targetPath);
