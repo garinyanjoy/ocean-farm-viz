@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { Container } from "@mui/material";
 import Header from "./pages/Header";
@@ -35,11 +35,32 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 
 // 应用内容组件，包含所有需要验证的路由
 const AppContent = () => {
-  const isAuthenticated = localStorage.getItem('username') !== null;
+  // 跟踪用户认证状态
+  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('username') !== null);
+  
+  // 监听localStorage变化
+  useEffect(() => {
+    // 创建一个监听函数来检测登录状态变化
+    const checkAuthStatus = () => {
+      const authStatus = localStorage.getItem('username') !== null;
+      setIsAuthenticated(authStatus);
+    };
+
+    // 添加事件监听器
+    window.addEventListener('storage', checkAuthStatus);
+    
+    // 为了保证其他组件可以触发状态更新，创建一个自定义事件
+    window.addEventListener('authChange', checkAuthStatus);
+    
+    return () => {
+      window.removeEventListener('storage', checkAuthStatus);
+      window.removeEventListener('authChange', checkAuthStatus);
+    };
+  }, []);
   
   return (
     <>
-      {isAuthenticated && <Header />}
+      <Header isAuthenticated={isAuthenticated} />
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
