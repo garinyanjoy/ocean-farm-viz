@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import { Container } from "@mui/material";
+import { Container, Typography } from "@mui/material";
 import Header from "./pages/Header";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,9 +14,23 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 
 // 检查用户是否已登录的守卫组件
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  const isAuthenticated = localStorage.getItem('username') !== null;
+  const { user } = useAuth(); // 使用全局认证状态
+  const [loading, setLoading] = useState(true);
   
-  if (!isAuthenticated) {
+  useEffect(() => {
+    // 给AuthContext一些时间来从localStorage加载用户信息
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (loading) {
+    return null; // 可以替换为加载指示器
+  }
+  
+  if (!user) {
     return <Navigate to="/login" />;
   }
   
@@ -24,7 +39,21 @@ const RequireAuth = ({ children }: { children: JSX.Element }) => {
 
 // 检查用户是否有管理员权限的守卫组件
 const RequireAdmin = ({ children }: { children: JSX.Element }) => {
-  const isAdmin = localStorage.getItem('userRole') === 'admin';
+  const { isAdmin } = useAuth(); // 使用全局认证状态
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // 给AuthContext一些时间来从localStorage加载用户信息
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (loading) {
+    return null; // 可以替换为加载指示器
+  }
   
   if (!isAdmin) {
     return <Navigate to="/main-info" />;
@@ -35,28 +64,24 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 
 // 应用内容组件，包含所有需要验证的路由
 const AppContent = () => {
-  // 跟踪用户认证状态
-  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('username') !== null);
+  const { user, isInitialized } = useAuth(); // 使用AuthContext的全局状态
+  const isAuthenticated = !!user;
   
-  // 监听localStorage变化
-  useEffect(() => {
-    // 创建一个监听函数来检测登录状态变化
-    const checkAuthStatus = () => {
-      const authStatus = localStorage.getItem('username') !== null;
-      setIsAuthenticated(authStatus);
-    };
-
-    // 添加事件监听器
-    window.addEventListener('storage', checkAuthStatus);
-    
-    // 为了保证其他组件可以触发状态更新，创建一个自定义事件
-    window.addEventListener('authChange', checkAuthStatus);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuthStatus);
-      window.removeEventListener('authChange', checkAuthStatus);
-    };
-  }, []);
+  // 等待认证状态初始化
+  if (!isInitialized) {
+    return (
+      <Container 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}
+      >
+        <Typography>加载中...</Typography>
+      </Container>
+    );
+  }
   
   return (
     <>
@@ -65,7 +90,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to={isAuthenticated ? "/main-info" : "/login"} />} />
           
           <Route 
             path="/main-info" 
