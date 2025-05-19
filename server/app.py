@@ -54,10 +54,6 @@ def register():
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
         return jsonify({"message": "用户名已存在"}), 409
-    # Check if a admin already exists
-    existing_admin = User.query.filter_by(role="admin").first()
-    if role == "admin" and existing_admin:
-        return jsonify({"message": "您不能注册管理员账户"}), 409
 
     new_user = User(
         username=username, role=role, password_hash=generate_password_hash(password)
@@ -71,6 +67,7 @@ def register():
             "role": new_user.role,  # the role will be used in the client.
         }
     )
+
 
 # 获取所有用户列表接口（仅管理员可用）
 @app.route("/api/users", methods=["GET"])
