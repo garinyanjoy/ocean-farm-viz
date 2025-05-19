@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, TextField, Button, Paper, Typography, Box } from '@mui/material';
+import { Container, TextField, Button, Paper, Typography, Box, MenuItem } from '@mui/material';
 import axios from 'axios';
 
 const Register: React.FC = () => {
@@ -9,6 +9,7 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [role, setRole] = useState('user');
 
   const handleRegister = async () => {
     if (password !== confirmPassword) {
@@ -20,7 +21,7 @@ const Register: React.FC = () => {
       const response = await axios.post('http://localhost:5000/api/register', {
         username,
         password,
-        role: 'user' // 默认注册为普通用户
+        role: role
       });
       
       if (response.data.message === "Registration successful") {
@@ -69,6 +70,17 @@ const Register: React.FC = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
+          <TextField
+            select
+            fullWidth
+            margin="normal"
+            label="角色"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <MenuItem value="user">普通用户</MenuItem>
+            <MenuItem value="admin">管理员</MenuItem>
+          </TextField>
           <Button
             fullWidth
             variant="contained"
