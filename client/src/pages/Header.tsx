@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BellOutlined, SettingOutlined } from '@ant-design/icons';
+import { useAuth } from '../auth/AuthContext'; // 导入useAuth
 
 // 类型定义
 interface HeaderButton {
@@ -112,18 +113,9 @@ const AdminButton = styled.button`
 
 const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
   const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth(); // 使用AuthContext
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>('');
-
-  // 导航按钮配置
-  const navButtons: HeaderButton[] = [
-    { id: 'main-info', text: '主要信息', path: '/main-info' },
-    { id: 'underwater', text: '水下系统', path: '/underwater' },
-    { id: 'data-center', text: '数据中心', path: '/data-center' },
-    { id: 'intelligent', text: '智能中心', path: '/intelligent' }
-  ];
-
+  
   // 更新时间
   useEffect(() => {
     const timer = setInterval(() => {
@@ -135,27 +127,17 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // 检查用户登录状态和角色
-  useEffect(() => {
-    const userRole = localStorage.getItem('userRole');
-    const storedUsername = localStorage.getItem('username');
-    
-    if (userRole === 'admin') {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
-
-    if (storedUsername) {
-      setUsername(storedUsername);
-    } else {
-      setUsername('');
-    }
-  }, [isAuthenticated]); // 当认证状态改变时重新检查
+  // 导航按钮配置
+  const navButtons: HeaderButton[] = [
+    { id: 'main-info', text: '主要信息', path: '/main-info' },
+    { id: 'underwater', text: '水下系统', path: '/underwater' },
+    { id: 'data-center', text: '数据中心', path: '/data-center' },
+    { id: 'intelligent', text: '智能中心', path: '/intelligent' }
+  ];
 
   // 处理导航点击
   const handleNavigation = (path: string) => {
-    if (isAuthenticated) {
+    if (user) { // 检查用户是否已登录
       navigate(path);
     } else {
       navigate('/login');
@@ -164,13 +146,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
 
   // 处理退出登录
   const handleLogout = () => {
-    // 清除本地存储的登录信息
-    localStorage.removeItem('username');
-    localStorage.removeItem('userRole');
-    
-    // 触发自定义事件通知应用状态变化
-    window.dispatchEvent(new Event('authChange'));
-    
+    logout(); // 使用AuthContext提供的logout方法
     navigate('/login');
   };
 
@@ -217,9 +193,9 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
         <TimeDisplay>{currentTime}</TimeDisplay>
         
         {/* 根据登录状态显示不同的内容 */}
-        {isAuthenticated ? (
+        {user ? (
           <>
-            {username && <span>欢迎，{username}</span>}
+            {user.username && <span>欢迎，{user.username}</span>}
             <LogoutButton onClick={handleLogout}>退出系统</LogoutButton>
             {isAdmin && (
               <AdminButton onClick={handleAdminClick}>
