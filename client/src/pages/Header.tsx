@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BellOutlined, SettingOutlined } from '@ant-design/icons';
-
+import { useAuth } from '../auth/AuthContext'; // 导入useAuth
 
 // 类型定义
 interface HeaderButton {
@@ -11,12 +11,16 @@ interface HeaderButton {
   path: string;
 }
 
+interface HeaderProps {
+  isAuthenticated: boolean;
+}
+
 const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color:rgb(30, 162, 215); /* 天蓝色 */
+  background-color: rgb(30, 162, 215); /* 天蓝色 */
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -107,20 +111,11 @@ const AdminButton = styled.button`
   }
 `;
 
-const Header: React.FC = () => {
+const Header: React.FC<HeaderProps> = ({ isAuthenticated }) => {
   const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth(); // 使用AuthContext
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>('');
-
-  // 导航按钮配置
-  const navButtons: HeaderButton[] = [
-    { id: 'main-info', text: '主要信息', path: '/main-info' },
-    { id: 'underwater', text: '水下系统', path: '/underwater' },
-    { id: 'data-center', text: '数据中心', path: '/data-center' },
-    { id: 'intelligent', text: '智能中心', path: '/intelligent' }
-  ];
-
+  
   // 更新时间
   useEffect(() => {
     const timer = setInterval(() => {
@@ -132,33 +127,37 @@ const Header: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 检查用户登录状态和角色
-  useEffect(() => {
-    const userRole = localStorage.getItem('userRole');
-    const storedUsername = localStorage.getItem('username');
-    
-    if (userRole === 'admin') {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
-
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-  }, []);
+  // 导航按钮配置
+  const navButtons: HeaderButton[] = [
+    { id: 'main-info', text: '主要信息', path: '/main-info' },
+    { id: 'underwater', text: '水下系统', path: '/underwater' },
+    { id: 'data-center', text: '数据中心', path: '/data-center' },
+    { id: 'intelligent', text: '智能中心', path: '/intelligent' }
+  ];
 
   // 处理导航点击
   const handleNavigation = (path: string) => {
-    navigate(path);
+    if (user) { // 检查用户是否已登录
+      navigate(path);
+    } else {
+      navigate('/login');
+    }
   };
 
   // 处理退出登录
   const handleLogout = () => {
-    // 清除本地存储的登录信息
-    localStorage.removeItem('username');
-    localStorage.removeItem('userRole');
+    logout(); // 使用AuthContext提供的logout方法
     navigate('/login');
+  };
+
+  // 处理登录按钮点击
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
+  // 处理注册按钮点击
+  const handleRegisterClick = () => {
+    navigate('/register');
   };
 
   // 处理管理员按钮点击
@@ -192,13 +191,24 @@ const Header: React.FC = () => {
       {/* 右侧功能区 */}
       <RightSection>
         <TimeDisplay>{currentTime}</TimeDisplay>
-        {username && <span>欢迎，{username}</span>}
-        <LogoutButton onClick={handleLogout}>退出系统</LogoutButton>
-        {isAdmin && (
-          <AdminButton onClick={handleAdminClick}>
-            <SettingOutlined /> 
-            用户管理
-          </AdminButton>
+        
+        {/* 根据登录状态显示不同的内容 */}
+        {user ? (
+          <>
+            {user.username && <span>欢迎，{user.username}</span>}
+            <LogoutButton onClick={handleLogout}>退出系统</LogoutButton>
+            {isAdmin && (
+              <AdminButton onClick={handleAdminClick}>
+                <SettingOutlined /> 
+                用户管理
+              </AdminButton>
+            )}
+          </>
+        ) : (
+          <>
+            <NavButton onClick={handleLoginClick}>登录</NavButton>
+            <NavButton onClick={handleRegisterClick}>注册</NavButton>
+          </>
         )}
       </RightSection>
     </HeaderContainer>
