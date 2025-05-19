@@ -171,23 +171,6 @@ def create_user():
         "role": new_user.role
     }), 201
 
-# 创建初始管理员账户
-def create_default_admin():
-    """创建默认管理员账户，如果不存在的话"""
-    admin_exists = User.query.filter_by(role="admin").first()
-    if not admin_exists:
-        print("创建默认管理员账户...")
-        default_admin = User(
-            username="admin",
-            role="admin",
-            password_hash=generate_password_hash("admin123")
-        )
-        db.session.add(default_admin)
-        db.session.commit()
-        print(f"默认管理员账户创建成功 (用户名: admin, 密码: admin123)")
-    else:
-        print("管理员账户已存在，跳过创建默认管理员")
-
 def import_hydrodata_from_csv():
     """从CSV文件导入水质数据"""
     csv_path = os.path.join(os.path.dirname(__file__), '../data/processed/combined_water_quality.csv')
@@ -314,9 +297,6 @@ def test_api():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-
-        # 创建默认管理员账户
-        create_default_admin()
 
         # 检查是否需要导入数据
         if not HydroData.query.first():  # 如果数据库中没有数据
