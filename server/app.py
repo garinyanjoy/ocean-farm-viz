@@ -180,6 +180,11 @@ def import_hydrodata_from_csv():
 
         for _, row in df.iterrows():
 
+            # 检查监测时间是否为null或无效值
+            if pd.isna(row['监测时间']) or not isinstance(row['监测时间'], str):
+                print(f"无效数据，跳过这一行。")
+                continue  # 跳过这一行
+                
             date_str = row['监测时间'].split()[0]
             date = datetime.strptime(date_str, '%Y-%m-%d').date()
 
