@@ -142,7 +142,10 @@ const IntelligentCenter: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
+  useEffect(() => {
+  // 自动触发定位
+    handleGetLocation();
+  }, []);
   // ========== 聊天功能处理 ==========
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -327,8 +330,6 @@ const IntelligentCenter: React.FC = () => {
   };
 
   const generateWeatherAlert = () => {
-    if (!weatherData) return '这里是默认的警示信息';
-    
     if (weatherData.temp_c > 35) {
       return '高温警告：请注意防暑降温';
     }
@@ -340,17 +341,6 @@ const IntelligentCenter: React.FC = () => {
     }
     return '天气条件适宜海洋作业';
   };
-
-  // 在组件渲染时设置默认的警示信息
-  useEffect(() => {
-  // 设置默认的警示信息
-  setWeatherData({ 
-    temp_c: '这里是温度',
-    humidity: '这里是湿度',
-    wind_kph: '这里是风速',
-    condition: { text: '这里是天气状况' }
-  });
-  }, []);
 
   return (
     <Container>
