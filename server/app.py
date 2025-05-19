@@ -22,6 +22,7 @@ db_port = os.getenv('DB_PORT', '3306')
 db_name = os.getenv('DB_NAME', 'ocean-monitor')
 
 app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+print("连接数据库：", db_user, db_password, db_host, db_port, db_name)
 db.init_app(app)
 
 # 登录接口
@@ -298,6 +299,64 @@ def test_api():
         "status": "OK",
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
+
+@app.route("/api/fish", methods=["GET"])
+def get_fish():
+    fish_list = Fish.query.all()
+    result = []
+    for fish in fish_list:
+        result.append({
+            "id": fish.id,
+            "species": fish.species,
+            "weight": fish.weight,
+            "length1": fish.length1,
+            "length2": fish.length2,
+            "length3": fish.length3,
+            "height": fish.height,
+            "width": fish.width
+        })
+    return jsonify(result)
+
+@app.route("/api/hydrodata", methods=["GET"])
+def get_hydrodata():
+    # 支持多条件筛选
+    query = HydroData.query
+    id = request.args.get("id")
+    location = request.args.get("location")
+    basin = request.args.get("basin")
+    section_name = request.args.get("section_name")
+    date = request.args.get("date")
+    if id:
+        query = query.filter_by(id=id)
+    if location:
+        query = query.filter_by(location=location)
+    if basin:
+        query = query.filter_by(basin=basin)
+    if section_name:
+        query = query.filter_by(section_name=section_name)
+    if date:
+        query = query.filter_by(date=date)
+    data = query.all()
+    result = []
+    for d in data:
+        result.append({
+            "id": d.id,
+            "location": d.location,
+            "basin": d.basin,
+            "section_name": d.section_name,
+            "date": d.date.strftime("%Y-%m-%d"),
+            "water_temperature": d.water_temperature,
+            "pH": d.pH,
+            "dissolved_oxygen": d.dissolved_oxygen,
+            "conductivity": d.conductivity,
+            "turbidity": d.turbidity,
+            "permanganate_index": d.permanganate_index,
+            "ammonia_nitrogen": d.ammonia_nitrogen,
+            "total_phosphorus": d.total_phosphorus,
+            "total_nitrogen": d.total_nitrogen,
+            "site_condition": d.site_condition
+        })
+    return jsonify(result)
 
 if __name__ == "__main__":
     with app.app_context():

@@ -38,26 +38,36 @@ import {
   ReferenceLine,
 } from "recharts";
 import { styled } from "@mui/system";
-
-// 模拟数据：真实项目中应通过接口获取
-const waterQualityData = [
-  { label: "水温", value: 22.5 },
-  { label: "pH", value: 7.4 },
-  { label: "溶解氧", value: 6.8 },
-  { label: "电导率", value: 300 },
-  { label: "浊度", value: 2.1 },
-  { label: "高锰酸盐指数", value: 3.2 },
-  { label: "氨氮", value: 0.5 },
-  { label: "总磷", value: 0.2 },
-  { label: "总氮", value: 1.8 },
-];
-interface Fish {
+type Fish = {
+  id: number;
   species: string;
   weight: number;
-  length: number;
+  length1: number;
+  length2: number;
+  length3: number;
   height: number;
   width: number;
-}
+};
+
+// ...其他import...
+type HydroData = {
+  id: number;
+  location: string;
+  basin: string;
+  section_name: string;
+  date: string;
+  water_temperature: number;
+  pH: number;
+  dissolved_oxygen: number;
+  conductivity: number;
+  turbidity: number;
+  permanganate_index: number;
+  ammonia_nitrogen: number;
+  total_phosphorus: number;
+  total_nitrogen: number;
+  site_condition: string;
+};
+
 // 生成正态分布的随机数
 function randomNormal(mean: number, std: number) {
   let u = 0, v = 0;
@@ -66,30 +76,61 @@ function randomNormal(mean: number, std: number) {
   return mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-// 生成模拟鱼类数据
-const fishSpecies = ["鲤鱼", "草鱼", "鲫鱼", "鲢鱼"];
-const fishData: Fish[] = [];
-for (let i = 0; i < 200; i++) {
-  const species = fishSpecies[Math.floor(Math.random() * fishSpecies.length)];
-  // 不同鱼种不同均值和方差
-  let meanWeight = 1.5, stdWeight = 0.3, meanLength = 30, stdLength = 5;
-  if (species === "草鱼") { meanWeight = 2.2; stdWeight = 0.4; meanLength = 38; stdLength = 6; }
-  if (species === "鲫鱼") { meanWeight = 0.8; stdWeight = 0.15; meanLength = 20; stdLength = 3; }
-  if (species === "鲢鱼") { meanWeight = 2.8; stdWeight = 0.5; meanLength = 42; stdLength = 7; }
-  fishData.push({
-    species,
-    weight: Math.max(0.2, Number(randomNormal(meanWeight, stdWeight).toFixed(2))),
-    length: Math.max(5, Number(randomNormal(meanLength, stdLength).toFixed(2))),
-    height: Math.max(2, Number(randomNormal(10, 2).toFixed(2))),
-    width: Math.max(1, Number(randomNormal(5, 1).toFixed(2))),
-  });
+function getScoreByStandard(metric: string, value: number | null | undefined): number {
+  if (value == null) return 0;
+  switch (metric) {
+    case "溶解氧":
+      if (value >= 7.5) return 5;
+      if (value >= 6) return 4;
+      if (value >= 5) return 3;
+      if (value >= 3) return 2;
+      if (value >= 2) return 1;
+      return 0;
+    case "高锰酸盐指数":
+      if (value <= 2) return 5;
+      if (value <= 4) return 4;
+      if (value <= 6) return 3;
+      if (value <= 10) return 2;
+      if (value <= 15) return 1;
+      return 0;
+    case "化学需氧量 COD":
+      if (value <= 15) return 5;
+      if (value <= 20) return 4;
+      if (value <= 30) return 3;
+      if (value <= 40) return 2;
+      return 1;
+    case "五日生化需氧量 BOD₅":
+      if (value <= 3) return 5;
+      if (value <= 4) return 4;
+      if (value <= 6) return 3;
+      if (value <= 10) return 2;
+      return 1;
+    case "氨氮":
+      if (value <= 0.15) return 5;
+      if (value <= 0.5) return 4;
+      if (value <= 1.0) return 3;
+      if (value <= 1.5) return 2;
+      if (value <= 2.0) return 1;
+      return 0;
+    case "总磷":
+      if (value <= 0.01) return 5;
+      if (value <= 0.025) return 4;
+      if (value <= 0.05) return 3;
+      if (value <= 0.1) return 2;
+      if (value <= 0.2) return 1;
+      return 0;
+    case "总氮":
+      if (value <= 0.2) return 5;
+      if (value <= 0.5) return 4;
+      if (value <= 1.0) return 3;
+      if (value <= 1.5) return 2;
+      if (value <= 2.0) return 1;
+      return 0;
+    default:
+      return 0;
+  }
 }
 
-// 环境评分：均值示例
-const calculateScore = () => {
-  const sum = waterQualityData.reduce((acc, item) => acc + item.value, 0);
-  return parseFloat((sum / waterQualityData.length).toFixed(2));
-};
 
 const SectionCard = styled(Card)(({ theme }) => ({
   background: "rgba(255,255,255,0.13)",
@@ -115,14 +156,59 @@ const ChartBox = styled(Box)({ height: 250, width: '100%' });
 const COLORS = ['#0288d1', '#03a9f4', '#b3e5fc', '#81d4fa'];
 
 const UnderWaterSystem: React.FC = () => {
-  const [score, setScore] = useState<number>(0);
-  const [selectedMetric, setSelectedMetric] = useState<keyof Fish>('weight');
-  const [selectedSpecies, setSelectedSpecies] = useState<string>(fishData[0].species);
-  const [selectedWqMetric, setSelectedWqMetric] = useState<string>(waterQualityData[0].label);
+  const [hydroList, setHydroList] = useState<HydroData[]>([]);
+  const [selectedHydroId, setSelectedHydroId] = useState<number | "">("");
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [selectedBasin, setSelectedBasin] = useState<string>("");
+  const [selectedSection, setSelectedSection] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedWqMetric, setSelectedWqMetric] = useState<string>("pH");
 
-  useEffect(() => { setScore(calculateScore()); }, []);
+  useEffect(() => {
+    fetch("/api/hydrodata")
+      .then(res => res.json())
+      .then((data: HydroData[]) => setHydroList(data));
+  }, []);
+  const [fishData, setFishData] = useState<Fish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMetric, setSelectedMetric] = useState<'weight' | 'length1' | 'length2' | 'length3' | 'height' | 'width'>('weight');
+  const [selectedSpecies, setSelectedSpecies] = useState<string>("");
 
-  // 全量分布
+  useEffect(() => {
+    fetch("/api/fish")
+      .then(res => res.json())
+      .then((data: Fish[]) => {
+        setFishData(data);
+        if (data.length > 0) setSelectedSpecies(data[0].species);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div>加载中...</div>;
+  if (fishData.length === 0) return <div>暂无鱼类数据</div>;
+  const selectedHydro = hydroList.find(h =>
+    (!selectedLocation || h.location === selectedLocation) &&
+    (!selectedBasin || h.basin === selectedBasin) &&
+    (!selectedSection || h.section_name === selectedSection) &&
+    (!selectedDate || h.date === selectedDate)
+  );
+
+  const waterQualityData = selectedHydro ? [
+    { label: "水温", value: selectedHydro.water_temperature },
+    { label: "pH", value: selectedHydro.pH },
+    { label: "溶解氧", value: selectedHydro.dissolved_oxygen },
+    { label: "电导率", value: selectedHydro.conductivity },
+    { label: "浊度", value: selectedHydro.turbidity },
+    { label: "高锰酸盐指数", value: selectedHydro.permanganate_index },
+    { label: "氨氮", value: selectedHydro.ammonia_nitrogen },
+    { label: "总磷", value: selectedHydro.total_phosphorus },
+    { label: "总氮", value: selectedHydro.total_nitrogen },
+  ] : [];
+  const calculateScore = () => {
+    const sum = waterQualityData.reduce((acc, item) => acc + item.value, 0);
+    return parseFloat((sum / waterQualityData.length).toFixed(2));
+  };
   const makeDistribution = (metric: keyof Fish, data: Fish[]) => {
     // 1. 找到最小最大值
     const values = data.map(f => Number(f[metric]));
@@ -141,12 +227,78 @@ const UnderWaterSystem: React.FC = () => {
     });
     return buckets;
   };
-
+  
   const overallDist = makeDistribution(selectedMetric, fishData);
   const speciesDist = fishData.filter(f => f.species === selectedSpecies);
   const pieData = fishData.reduce((acc: Record<string, number>, f) => { acc[f.species] = (acc[f.species] || 0) + 1; return acc; }, {});
   const pieChartData = Object.entries(pieData).map(([name, value]) => ({ name, value }));
+  // 计算各属性均值
+  const avg = (arr: number[]) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : '--';
 
+  const barChartData = [
+    { name: '体重', value: avg(fishData.map(f => f.weight)) },
+    { name: '体长1', value: avg(fishData.map(f => f.length1)) },
+    { name: '体长2', value: avg(fishData.map(f => f.length2)) },
+    { name: '体长3', value: avg(fishData.map(f => f.length3)) },
+    { name: '高度', value: avg(fishData.map(f => f.height)) },
+    { name: '宽度', value: avg(fishData.map(f => f.width)) },
+  ];
+  // 各鱼种数量柱状图数据
+  const speciesBarData = Array.from(
+    Object.entries(
+      fishData.reduce((acc: Record<string, number>, f) => {
+        acc[f.species] = (acc[f.species] || 0) + 1;
+        return acc;
+      }, {})
+    )
+  ).map(([name, value]) => ({ name, value }));
+  // 选中地点的所有历史数据，按日期排序
+  const selectedHydroSeries = hydroList
+    .filter(h =>
+      (!selectedLocation || h.location === selectedLocation) &&
+      (!selectedBasin || h.basin === selectedBasin) &&
+      (!selectedSection || h.section_name === selectedSection)
+    )
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // 计算每个时间点的环境评分
+  const envScoreLineData = selectedHydroSeries.map(h => {
+    // 只对有标准的指标评分
+    const metrics = [
+      { label: "溶解氧", value: h.dissolved_oxygen },
+      { label: "高锰酸盐指数", value: h.permanganate_index },
+      { label: "化学需氧量 COD", value: h.conductivity }, // 如果你有COD字段，替换为h.cod
+      { label: "五日生化需氧量 BOD₅", value: h.turbidity }, // 如果你有BOD5字段，替换为h.bod5
+      { label: "氨氮", value: h.ammonia_nitrogen },
+      { label: "总磷", value: h.total_phosphorus },
+      { label: "总氮", value: h.total_nitrogen }
+    ];
+    // 只对有值的项评分
+    const scores = metrics.map(m => getScoreByStandard(m.label, m.value)).filter(s => s > 0);
+    const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    return {
+      date: h.date,
+      score: Number(avgScore.toFixed(2))
+    };
+  });
+  const score = envScoreLineData.length ? envScoreLineData[envScoreLineData.length - 1].score : 0;
+  // 当前选中指标的历史曲线数据
+  const wqLineData = selectedHydroSeries.map(h => ({
+    date: h.date,
+    value: (() => {
+      switch (selectedWqMetric) {
+        case "水温": return h.water_temperature;
+        case "pH": return h.pH;
+        case "溶解氧": return h.dissolved_oxygen;
+        case "电导率": return h.conductivity;
+        case "浊度": return h.turbidity;
+        case "高锰酸盐指数": return h.permanganate_index;
+        case "氨氮": return h.ammonia_nitrogen;
+        case "总磷": return h.total_phosphorus;
+        case "总氮": return h.total_nitrogen;
+        default: return null;
+      }
+    })()
+  }));
   return (
     <>
       <div className="bubble-bg">
@@ -184,7 +336,7 @@ const UnderWaterSystem: React.FC = () => {
                 鱼群属性分布
               </Typography>
               <ButtonGroup size="small" sx={{ mb: 1 }}>
-                {(['weight', 'length', 'height', 'width'] as Array<keyof Fish>).map(m => (
+                {(['weight', 'length1', 'length2', 'length3', 'height', 'width'] as const).map(m => (
                   <Button
                     key={m}
                     variant={selectedMetric === m ? "contained" : "outlined"}
@@ -195,7 +347,17 @@ const UnderWaterSystem: React.FC = () => {
                       borderColor: '#4fc3f7'
                     }}
                   >
-                    {m === 'weight' ? '体重' : m === 'length' ? '体长' : m === 'height' ? '高度' : '宽度'}
+                    {m === 'weight'
+                      ? '体重'
+                      : m === 'length1'
+                      ? '体长1'
+                      : m === 'length2'
+                      ? '体长2'
+                      : m === 'length3'
+                      ? '体长3'
+                      : m === 'height'
+                      ? '高度'
+                      : '宽度'}
                   </Button>
                 ))}
               </ButtonGroup>
@@ -249,10 +411,6 @@ const UnderWaterSystem: React.FC = () => {
                   return (
                     <>
                       <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>数量</Typography>
-                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{current.length}</Typography>
-                      </Box>
-                      <Box sx={{ textAlign: 'center' }}>
                         <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>均值</Typography>
                         <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{avg}</Typography>
                       </Box>
@@ -271,7 +429,201 @@ const UnderWaterSystem: React.FC = () => {
             </CardContent>
           </SectionCard>
         </Grid>
-        
+        <Grid item xs={12} md={4}>
+          <SectionCard>
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 360,
+                background: 'transparent',
+                position: 'relative',
+                overflow: 'hidden',
+                p: 3
+              }}
+            >
+              {/* 波浪底部装饰 */}
+              <svg width="100%" height="48" viewBox="0 0 300 48" fill="none" style={{ position: 'absolute', bottom: 0, left: 0, zIndex: 0 }}>
+                <path d="M0 24 Q75 48 150 24 T300 24 V48 H0Z" fill="#4fc3f7" fillOpacity="0.18"/>
+                <path d="M0 36 Q75 24 150 36 T300 36 V48 H0Z" fill="#0288d1" fillOpacity="0.10"/>
+              </svg>
+              {/* 多条鱼装饰 */}
+              <svg width="60" height="28" style={{ position: 'absolute', top: 18, left: 24, zIndex: 1, opacity: 0.22 }}>
+                <g>
+                  <ellipse cx="14" cy="14" rx="12" ry="5" fill="#4fc3f7" />
+                  <polygon points="28,14 36,11 36,17" fill="#0288d1" />
+                </g>
+                <g>
+                  <ellipse cx="46" cy="20" rx="6" ry="2.5" fill="#b3e5fc" />
+                  <polygon points="52,20 56,18 56,22" fill="#81d4fa" />
+                </g>
+              </svg>
+              <svg width="36" height="16" style={{ position: 'absolute', top: 60, right: 32, zIndex: 1, opacity: 0.15 }}>
+                <ellipse cx="18" cy="8" rx="16" ry="6" fill="#81d4fa" />
+                <polygon points="32,8 36,6 36,10" fill="#0288d1" />
+              </svg>
+              {/* 水泡装饰 */}
+              <svg width="40" height="40" style={{ position: 'absolute', top: 30, right: 40, zIndex: 1, opacity: 0.18 }}>
+                <circle cx="20" cy="20" r="20" fill="#b3e5fc" />
+              </svg>
+              {/* 欢迎标语 */}
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 900,
+                  letterSpacing: 4,
+                  mb: 1,
+                  mt: 1,
+                  fontSize: { xs: 36, md: 54, lg: 64 },
+                  background: 'linear-gradient(90deg,#4fc3f7 20%,#0288d1 80%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '0 8px 36px #0288d1, 0 2px 0 #fff',
+                  zIndex: 2,
+                  lineHeight: 1.1
+                }}
+              >
+                欢迎来到水下世界！
+              </Typography>
+              {/* 您已养殖 + 波浪icon */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, zIndex: 2 }}>
+                <Typography
+                  sx={{
+                    fontSize: 28,
+                    color: '#b3e5fc',
+                    fontWeight: 700,
+                    letterSpacing: 2,
+                    textShadow: '0 2px 12px #0288d1'
+                  }}
+                >
+                  您已养殖
+                </Typography>
+                <svg width="48" height="18" viewBox="0 0 48 18" style={{ marginLeft: 8 }} fill="none">
+                  <path d="M0 9 Q12 0 24 9 T48 9" stroke="#4fc3f7" strokeWidth="3" fill="none" />
+                </svg>
+              </Box>
+              {/* 大表盘进度条 */}
+              <Box sx={{ position: 'relative', width: 200, height: 200, mb: 1 }}>
+                {/* 外圈渐变光晕 */}
+                <svg width="200" height="200" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
+                  <defs>
+                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#b3e5fc" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#0288d1" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="100" cy="100" r="95" fill="url(#glow)" />
+                </svg>
+                {/* 主表盘 */}
+                <svg width="200" height="200" style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
+                  <defs>
+                    <linearGradient id="progressBg" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#b3e5fc" />
+                      <stop offset="1" stopColor="#7c4dff" />
+                    </linearGradient>
+                    <linearGradient id="progressBig" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#4f3ff7" />
+                      <stop offset="0.3" stopColor="#7c4dff" />
+                      <stop offset="0.7" stopColor="#0288d1" />
+                      <stop offset="1" stopColor="#01579b" />
+                    </linearGradient>
+                    <linearGradient id="numGrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+                      <stop offset="0%" stopColor="#4fc3f7" />
+                      <stop offset="60%" stopColor="#7c4dff" />
+                      <stop offset="100%" stopColor="#0288d1" />
+                    </linearGradient>
+                  </defs>
+                  {/* 底环 */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="url(#progressBg)"
+                    strokeWidth="18"
+                    fill="none"
+                    opacity={0.18}
+                  />
+                  {/* 主进度环 */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="85"
+                    stroke="url(#progressBig)"
+                    strokeWidth="18"
+                    fill="none"
+                    strokeDasharray={534}
+                    strokeDashoffset={534 - 534 * Math.min(fishData.length / 1000, 1)}
+                    strokeLinecap="round"
+                    style={{
+                      filter: 'drop-shadow(0 0 8px #7c4dff) drop-shadow(0 0 4px #0288d1)',
+                      transition: 'stroke-dashoffset 1s'
+                    }}
+                  />
+                  {/* 刻度线 */}
+                  {Array.from({ length: 10 }).map((_, i) => {
+                    const angle = (i / 10) * 2 * Math.PI - Math.PI / 2;
+                    const x1 = 100 + Math.cos(angle) * 75;
+                    const y1 = 100 + Math.sin(angle) * 75;
+                    const x2 = 100 + Math.cos(angle) * 85;
+                    const y2 = 100 + Math.sin(angle) * 85;
+                    return (
+                      <line
+                        key={i}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#7c4dff"
+                        strokeWidth={2}
+                        opacity={0.85}
+                        style={{ filter: 'drop-shadow(0 0 2px #4fc3f7)' }}
+                      />
+                    );
+                  })}
+                  {/* 中心数字 */}
+                  <text
+                    x="100"
+                    y="120"
+                    textAnchor="middle"
+                    fontSize="64"
+                    fontWeight="bold"
+                    fill="url(#numGrad)"
+                    style={{ textShadow: '0 0 24px #7c4dff, 0 2px 0 #fff' }}
+                  >
+                    {fishData.length}
+                  </text>
+                  {/* 单位 */}
+                  <text
+                    x="100"
+                    y="150"
+                    textAnchor="middle"
+                    fontSize="24"
+                    fontWeight="bold"
+                    fill="#4fc3f7"
+                    opacity={0.85}
+                  >
+                    / 1000 条
+                  </text>
+                  {/* 小鱼icon */}
+                  <g>
+                    <ellipse cx="160" cy="60" rx="10" ry="4" fill="#7c4dff" opacity="0.7"/>
+                    <polygon points="170,60 178,57 178,63" fill="#0288d1" opacity="0.7"/>
+                  </g>
+                  <g>
+                    <ellipse cx="50" cy="160" rx="7" ry="3" fill="#b3e5fc" opacity="0.5"/>
+                    <polygon points="57,160 62,158 62,162" fill="#81d4fa" opacity="0.5"/>
+                  </g>
+                </svg>
+              </Box>
+              {/* 波浪icon再点缀一层 */}
+              <svg width="140" height="28" style={{ marginTop: 8, zIndex: 2 }}>
+                <path d="M0 14 Q35 0 70 14 T140 14" stroke="#4fc3f7" strokeWidth="4" fill="none" />
+              </svg>
+            </CardContent>
+          </SectionCard>
+        </Grid>
         <Grid item xs={12} md={4}>
           <SectionCard>
             <CardContent sx={{ textAlign: 'center', p: 2 }}>
@@ -294,7 +646,7 @@ const UnderWaterSystem: React.FC = () => {
                 鱼类总体信息
               </Typography>
               <Typography sx={{ color: '#b3e5fc', fontSize: 14, mb: 2 }}>
-                展示当前水体内鱼类的整体分布与健康状况。
+                展示当前水体内鱼类的整体分布与种群数量。
               </Typography>
               {/* 品种分布饼图 */}
               <Box sx={{ width: '100%', height: 180, mb: 2 }}>
@@ -319,18 +671,12 @@ const UnderWaterSystem: React.FC = () => {
                 </ResponsiveContainer>
               </Box>
               {/* 平均值柱状图 */}
+              {/* 各鱼种数量柱状图 */}
               <Box sx={{ width: '100%', height: 120 }}>
                 <ResponsiveContainer>
-                  <BarChart
-                    data={[
-                      { name: '体重', value: (fishData.reduce((a, f) => a + f.weight, 0) / fishData.length).toFixed(2) },
-                      { name: '体长', value: (fishData.reduce((a, f) => a + f.length, 0) / fishData.length).toFixed(2) },
-                      { name: '高度', value: (fishData.reduce((a, f) => a + f.height, 0) / fishData.length).toFixed(2) },
-                      { name: '宽度', value: (fishData.reduce((a, f) => a + f.width, 0) / fishData.length).toFixed(2) },
-                    ]}
-                  >
+                  <BarChart data={speciesBarData}>
                     <XAxis dataKey="name" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" />
+                    <YAxis stroke="#b3e5fc" allowDecimals={false} />
                     <Tooltip />
                     <Bar dataKey="value" fill="#0288d1" />
                   </BarChart>
@@ -339,76 +685,6 @@ const UnderWaterSystem: React.FC = () => {
             </CardContent>
           </SectionCard>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <SectionCard>
-            <CardContent>
-              <Typography
-                variant="h6"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  mb: 1,
-                  color: '#e3f2fd',
-                  fontWeight: 700,
-                }}
-              >
-                <svg width="24" height="18" viewBox="0 0 24 18" style={{ marginLeft: 8 }} fill="none">
-                  <ellipse cx="18" cy="9" rx="3" ry="2.5" fill="#4fc3f7" />
-                  <path d="M2 9c3-4 10-7 17-4v8C12 16 5 13 2 9Z" fill="#4fc3f7" fillOpacity="0.7"/>
-                  <circle cx="6" cy="9" r="1" fill="#01579b"/>
-                </svg>
-                种群数量变化
-              </Typography>
-              <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
-                可查看不同鱼类在一段时间内的数量变化趋势。
-              </Typography>
-              {/* 选择鱼类 */}
-              <FormControl size="small" sx={{ minWidth: 120, mb: 2, background: 'rgba(33,150,243,0.10)', borderRadius: 1 }}>
-                <InputLabel sx={{ color: '#4fc3f7' }}>鱼种</InputLabel>
-                <Select
-                  value={selectedSpecies}
-                  label="鱼种"
-                  onChange={e => setSelectedSpecies(e.target.value)}
-                  sx={{
-                    color: '#e3f2fd',
-                    '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
-                    '.MuiSvgIcon-root': { color: '#4fc3f7' }
-                  }}
-                >
-                  {Array.from(new Set(fishData.map(f => f.species))).map(sp =>
-                    <MenuItem key={sp} value={sp}>{sp}</MenuItem>
-                  )}
-                </Select>
-              </FormControl>
-              {/* 模拟时间序列数据 */}
-              <ChartBox>
-                <ResponsiveContainer>
-                  <LineChart
-                    data={[
-                      { date: '1月', value: Math.floor(Math.random() * 10 + 10) },
-                      { date: '2月', value: Math.floor(Math.random() * 10 + 12) },
-                      { date: '3月', value: Math.floor(Math.random() * 10 + 14) },
-                      { date: '4月', value: Math.floor(Math.random() * 10 + 13) },
-                      { date: '5月', value: Math.floor(Math.random() * 10 + 15) },
-                      { date: '6月', value: Math.floor(Math.random() * 10 + 16) },
-                    ]}
-                  >
-                    <XAxis dataKey="date" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" />
-                    <Tooltip
-                      contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                      labelStyle={{ color: "#fff" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                    <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartBox>
-            </CardContent>
-          </SectionCard>
-        </Grid>
-
         {/* 第二行：左-中-右 */}
         <Grid item xs={12} md={4}>
           <SectionCard>
@@ -432,9 +708,60 @@ const UnderWaterSystem: React.FC = () => {
                   <path d="M10 2 C13 7, 16 11, 10 18 C4 11, 7 7, 10 2 Z" fill="#4fc3f7" fillOpacity="0.7"/>
                 </svg>
               </Typography>
-              <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
-                展示当前水体各项关键指标的综合表现，帮助快速判断水质健康状况。
-              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>省份</InputLabel>
+                  <Select
+                    value={selectedLocation}
+                    label="省份"
+                    onChange={e => setSelectedLocation(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
+                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>流域</InputLabel>
+                  <Select
+                    value={selectedBasin}
+                    label="流域"
+                    onChange={e => setSelectedBasin(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
+                      <MenuItem key={basin} value={basin}>{basin}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>断面名称</InputLabel>
+                  <Select
+                    value={selectedSection}
+                    label="断面名称"
+                    onChange={e => setSelectedSection(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
+                      <MenuItem key={sec} value={sec}>{sec}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>日期</InputLabel>
+                  <Select
+                    value={selectedDate}
+                    label="日期"
+                    onChange={e => setSelectedDate(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h =>
+                      (!selectedLocation || h.location === selectedLocation) &&
+                      (!selectedBasin || h.basin === selectedBasin) &&
+                      (!selectedSection || h.section_name === selectedSection)
+                    ).map(h => h.date))).map(date =>
+                      <MenuItem key={date} value={date}>{date}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Box>
               <ChartBox>
                 <ResponsiveContainer>
                   <RadarChart data={waterQualityData}>
@@ -475,7 +802,7 @@ const UnderWaterSystem: React.FC = () => {
               </Box>
             </CardContent>
           </SectionCard>
-        </Grid>
+        </Grid> 
         <Grid item xs={12} md={4}>
           <SectionCard>
             <CardContent>
@@ -494,6 +821,44 @@ const UnderWaterSystem: React.FC = () => {
                   <path d="M0 6 Q8 0 16 6 T32 6" stroke="#4fc3f7" strokeWidth="2" fill="none" />
                 </svg>
               </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>省份</InputLabel>
+                  <Select
+                    value={selectedLocation}
+                    label="省份"
+                    onChange={e => setSelectedLocation(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
+                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>流域</InputLabel>
+                  <Select
+                    value={selectedBasin}
+                    label="流域"
+                    onChange={e => setSelectedBasin(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
+                      <MenuItem key={basin} value={basin}>{basin}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>断面名称</InputLabel>
+                  <Select
+                    value={selectedSection}
+                    label="断面名称"
+                    onChange={e => setSelectedSection(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
+                      <MenuItem key={sec} value={sec}>{sec}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Box>
               <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
                 选择指标，查看其随时间的变化趋势，并对照水质标准分级。
               </Typography>
@@ -516,17 +881,7 @@ const UnderWaterSystem: React.FC = () => {
               </ButtonGroup>
               <ChartBox>
                 <ResponsiveContainer>
-                  <LineChart
-                    data={[
-                      // 模拟数据，实际应为后端返回的历史数据
-                      { date: '1月', value: 7.2 },
-                      { date: '2月', value: 7.4 },
-                      { date: '3月', value: 7.1 },
-                      { date: '4月', value: 7.5 },
-                      { date: '5月', value: 7.3 },
-                      { date: '6月', value: 7.6 },
-                    ]}
-                  >
+                  <LineChart data={wqLineData}>
                     <XAxis dataKey="date" stroke="#b3e5fc" />
                     <YAxis stroke="#b3e5fc" />
                     <Tooltip
@@ -534,21 +889,101 @@ const UnderWaterSystem: React.FC = () => {
                       labelStyle={{ color: "#fff" }}
                       itemStyle={{ color: "#fff" }}
                     />
-                    {/* 标准范围区域/线条示例：以pH为例 */}
-                    {selectedWqMetric === 'pH' && (
+                    {/* 指标标准区域/线条 */}
+                    {selectedWqMetric === '溶解氧' && (
                       <>
-                        {/* I类标准范围 */}
-                        <ReferenceArea y1={6.5} y2={8.5} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} />
-                        {/* II类标准范围 */}
-                        <ReferenceArea y1={6.0} y2={9.0} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />
-                        {/* III类标准范围 */}
-                        <ReferenceArea y1={5.5} y2={9.5} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />
-                        {/* 标准线 */}
-                        <ReferenceLine y={6.5} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={8.5} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceArea y1={7.5} y2={100} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} /> {/* I类 */}
+                        <ReferenceArea y1={6} y2={7.5} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />   {/* II类 */}
+                        <ReferenceArea y1={5} y2={6} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />     {/* III类 */}
+                        <ReferenceArea y1={3} y2={5} strokeOpacity={0.1} fill="#01579b" fillOpacity={0.06} />     {/* IV类 */}
+                        <ReferenceArea y1={2} y2={3} strokeOpacity={0.1} fill="#004d40" fillOpacity={0.04} />     {/* V类 */}
+                        <ReferenceLine y={7.5} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={6} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={5} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={3} stroke="#01579b" strokeDasharray="3 3" />
+                        <ReferenceLine y={2} stroke="#004d40" strokeDasharray="3 3" />
                       </>
                     )}
-                    {/* 你可以为其他指标设置不同的标准范围 */}
+                    {selectedWqMetric === '高锰酸盐指数' && (
+                      <>
+                        <ReferenceArea y1={0} y2={2} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={2} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceArea y1={10} y2={15} fill="#004d40" fillOpacity={0.04} />
+                        <ReferenceLine y={2} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                        <ReferenceLine y={15} stroke="#004d40" strokeDasharray="3 3" />
+                      </>
+                    )}
+                    {selectedWqMetric === '化学需氧量 COD' && (
+                      <>
+                        <ReferenceArea y1={0} y2={15} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={15} y2={20} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={20} y2={30} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={30} y2={40} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceLine y={15} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={20} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={30} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={40} stroke="#01579b" strokeDasharray="3 3" />
+                      </>
+                    )}
+                    {selectedWqMetric === '五日生化需氧量 BOD₅' && (
+                      <>
+                        <ReferenceArea y1={0} y2={3} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={3} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceLine y={3} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                      </>
+                    )}
+                    {selectedWqMetric === '氨氮' && (
+                      <>
+                        <ReferenceArea y1={0} y2={0.15} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={0.15} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                        <ReferenceLine y={0.15} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                        <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                      </>
+                    )}
+                    {selectedWqMetric === '总磷' && (
+                      <>
+                        <ReferenceArea y1={0} y2={0.01} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={0.01} y2={0.025} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={0.025} y2={0.05} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={0.05} y2={0.1} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceArea y1={0.1} y2={0.2} fill="#004d40" fillOpacity={0.04} />
+                        <ReferenceLine y={0.01} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.025} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.05} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.1} stroke="#01579b" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.2} stroke="#004d40" strokeDasharray="3 3" />
+                      </>
+                    )}
+                    {selectedWqMetric === '总氮' && (
+                      <>
+                        <ReferenceArea y1={0} y2={0.2} fill="#81d4fa" fillOpacity={0.18} />
+                        <ReferenceArea y1={0.2} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                        <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                        <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                        <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                        <ReferenceLine y={0.2} stroke="#81d4fa" strokeDasharray="3 3" />
+                        <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                        <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                        <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                        <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                      </>
+                    )}
                     <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -557,67 +992,67 @@ const UnderWaterSystem: React.FC = () => {
                 <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
                   指标标准说明：
                 </Typography>
-                {selectedWqMetric === 'pH' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：6.5~8.5</li>
-                    <li>II类：6.0~9.0</li>
-                    <li>III类：5.5~9.5</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '水温' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：0~30℃</li>
-                    <li>II类：0~32℃</li>
-                    <li>III类：0~35℃</li>
-                  </ul>
-                )}
                 {selectedWqMetric === '溶解氧' && (
                   <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≥7.5 mg/L</li>
-                    <li>II类：≥6 mg/L</li>
-                    <li>III类：≥5 mg/L</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '电导率' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤300 μS/cm</li>
-                    <li>II类：≤500 μS/cm</li>
-                    <li>III类：≤1000 μS/cm</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '浊度' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤1 NTU</li>
-                    <li>II类：≤3 NTU</li>
-                    <li>III类：≤10 NTU</li>
+                    <li>I类：≥7.5（或饱和率90%）</li>
+                    <li>II类：≥6</li>
+                    <li>III类：≥5</li>
+                    <li>IV类：≥3</li>
+                    <li>V类：≥2</li>
                   </ul>
                 )}
                 {selectedWqMetric === '高锰酸盐指数' && (
                   <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤2 mg/L</li>
-                    <li>II类：≤4 mg/L</li>
-                    <li>III类：≤6 mg/L</li>
+                    <li>I类：≤2</li>
+                    <li>II类：≤4</li>
+                    <li>III类：≤6</li>
+                    <li>IV类：≤10</li>
+                    <li>V类：≤15</li>
+                  </ul>
+                )}
+                {selectedWqMetric === '化学需氧量 COD' && (
+                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                    <li>I类：≤15</li>
+                    <li>II类：≤15</li>
+                    <li>III类：≤20</li>
+                    <li>IV类：≤30</li>
+                    <li>V类：≤40</li>
+                  </ul>
+                )}
+                {selectedWqMetric === '五日生化需氧量 BOD₅' && (
+                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                    <li>I类：≤3</li>
+                    <li>II类：≤3</li>
+                    <li>III类：≤4</li>
+                    <li>IV类：≤6</li>
+                    <li>V类：≤10</li>
                   </ul>
                 )}
                 {selectedWqMetric === '氨氮' && (
                   <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.15 mg/L</li>
-                    <li>II类：≤0.5 mg/L</li>
-                    <li>III类：≤1.0 mg/L</li>
+                    <li>I类：≤0.15</li>
+                    <li>II类：≤0.5</li>
+                    <li>III类：≤1.0</li>
+                    <li>IV类：≤1.5</li>
+                    <li>V类：≤2.0</li>
                   </ul>
                 )}
                 {selectedWqMetric === '总磷' && (
                   <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.02 mg/L</li>
-                    <li>II类：≤0.1 mg/L</li>
-                    <li>III类：≤0.2 mg/L</li>
+                    <li>I类：≤0.01</li>
+                    <li>II类：≤0.025</li>
+                    <li>III类：≤0.05</li>
+                    <li>IV类：≤0.1</li>
+                    <li>V类：≤0.2</li>
                   </ul>
                 )}
                 {selectedWqMetric === '总氮' && (
                   <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.2 mg/L</li>
-                    <li>II类：≤0.5 mg/L</li>
-                    <li>III类：≤1.0 mg/L</li>
+                    <li>I类：≤0.2</li>
+                    <li>II类：≤0.5</li>
+                    <li>III类：≤1.0</li>
+                    <li>IV类：≤1.5</li>
+                    <li>V类：≤2.0</li>
                   </ul>
                 )}
               </Box>
@@ -646,23 +1081,52 @@ const UnderWaterSystem: React.FC = () => {
                   <path d="M10 2 C13 7, 16 11, 10 18 C4 11, 7 7, 10 2 Z" fill="#4fc3f7" fillOpacity="0.7"/>
                 </svg>
               </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>省份</InputLabel>
+                  <Select
+                    value={selectedLocation}
+                    label="省份"
+                    onChange={e => setSelectedLocation(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
+                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>流域</InputLabel>
+                  <Select
+                    value={selectedBasin}
+                    label="流域"
+                    onChange={e => setSelectedBasin(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
+                      <MenuItem key={basin} value={basin}>{basin}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>断面名称</InputLabel>
+                  <Select
+                    value={selectedSection}
+                    label="断面名称"
+                    onChange={e => setSelectedSection(e.target.value)}
+                  >
+                    {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
+                      <MenuItem key={sec} value={sec}>{sec}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              </Box>
               <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
                 展示环境评分随时间的变化趋势，便于动态监控水体健康状况。
               </Typography>
               <ChartBox>
                 <ResponsiveContainer>
-                  <LineChart
-                    data={[
-                      { date: '1月', score: 7.8 },
-                      { date: '2月', score: 8.1 },
-                      { date: '3月', score: 7.5 },
-                      { date: '4月', score: 8.3 },
-                      { date: '5月', score: 8.0 },
-                      { date: '6月', score: 8.5 },
-                    ]}
-                  >
+                  <LineChart data={envScoreLineData}>
                     <XAxis dataKey="date" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" domain={[6, 10]} />
+                    <YAxis stroke="#b3e5fc" domain={[2, 5]} />
                     <Tooltip
                       contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
                       labelStyle={{ color: "#fff" }}
@@ -676,6 +1140,15 @@ const UnderWaterSystem: React.FC = () => {
                 <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15 }}>
                   当前综合评分：<span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{score}</span>
                 </Typography>
+              </Box>
+              <Box sx={{ mt: 2, color: '#b3e5fc', fontSize: 14 }}>
+                <Typography sx={{ fontWeight: 500, mb: 1 }}>
+                  环境评分标准说明：
+                </Typography>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  <li>每项指标按国家标准分级，I类得5分，II类4分，III类3分，IV类2分，V类1分，超V类0分。</li>
+                  <li>最终评分为各项得分的平均值。</li>
+                </ul>
               </Box>
             </CardContent>
           </SectionCard>

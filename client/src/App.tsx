@@ -86,7 +86,7 @@ const AppContent = () => {
   return (
     <>
       <Header isAuthenticated={isAuthenticated} />
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Container maxWidth={false} sx={{ mt: 4 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
