@@ -174,12 +174,12 @@ const UnderWaterSystem: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<'weight' | 'length1' | 'length2' | 'length3' | 'height' | 'width'>('weight');
   const [selectedSpecies, setSelectedSpecies] = useState<string>("");
 
+// 只保留如下 useEffect，不要自动设置 selectedSpecies
   useEffect(() => {
     fetch("/api/fish")
       .then(res => res.json())
       .then((data: Fish[]) => {
         setFishData(data);
-        if (data.length > 0) setSelectedSpecies(data[0].species);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -232,6 +232,7 @@ const UnderWaterSystem: React.FC = () => {
   const speciesDist = fishData.filter(f => f.species === selectedSpecies);
   const pieData = fishData.reduce((acc: Record<string, number>, f) => { acc[f.species] = (acc[f.species] || 0) + 1; return acc; }, {});
   const pieChartData = Object.entries(pieData).map(([name, value]) => ({ name, value }));
+  
   // 计算各属性均值
   const avg = (arr: number[]) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : '--';
 
@@ -335,97 +336,109 @@ const UnderWaterSystem: React.FC = () => {
                 </svg>
                 鱼群属性分布
               </Typography>
-              <ButtonGroup size="small" sx={{ mb: 1 }}>
-                {(['weight', 'length1', 'length2', 'length3', 'height', 'width'] as const).map(m => (
-                  <Button
-                    key={m}
-                    variant={selectedMetric === m ? "contained" : "outlined"}
-                    onClick={() => setSelectedMetric(m)}
-                    sx={{
-                      color: selectedMetric === m ? '#fff' : '#4fc3f7',
-                      background: selectedMetric === m ? 'linear-gradient(90deg,#0288d1,#4fc3f7)' : 'none',
-                      borderColor: '#4fc3f7'
-                    }}
-                  >
-                    {m === 'weight'
-                      ? '体重'
-                      : m === 'length1'
-                      ? '体长1'
-                      : m === 'length2'
-                      ? '体长2'
-                      : m === 'length3'
-                      ? '体长3'
-                      : m === 'height'
-                      ? '高度'
-                      : '宽度'}
-                  </Button>
-                ))}
-              </ButtonGroup>
               <FormControl size="small" sx={{ ml: 2, minWidth: 120, background: 'rgba(33,150,243,0.10)', borderRadius: 1 }}>
-                <InputLabel sx={{ color: '#4fc3f7' }}>鱼种</InputLabel>
+                {/* 不要 InputLabel */}
                 <Select
                   value={selectedSpecies}
-                  label="鱼种"
                   onChange={e => setSelectedSpecies(e.target.value)}
+                  displayEmpty
                   sx={{
                     color: '#e3f2fd',
                     '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
                     '.MuiSvgIcon-root': { color: '#4fc3f7' }
                   }}
+                  renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择鱼种</span>}
                 >
+                  <MenuItem value="">
+                    <em>请选择鱼种</em>
+                  </MenuItem>
                   {Array.from(new Set(fishData.map(f => f.species))).map(sp =>
                     <MenuItem key={sp} value={sp}>{sp}</MenuItem>
                   )}
                 </Select>
               </FormControl>
-              <ChartBox>
-                <ResponsiveContainer>
-                  <LineChart data={makeDistribution(selectedMetric, fishData.filter(f => f.species === selectedSpecies))}>
-                    <XAxis dataKey="x" stroke="#b3e5fc" type="number" domain={['auto', 'auto']} tickCount={8} />
-                    <YAxis stroke="#b3e5fc" />
-                    <Tooltip
-                      contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                      labelStyle={{ color: "#fff" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                    <Line type="monotone" dataKey="count" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartBox>
-              {/* 统计区 */}
-              <Box sx={{
-                mt: 2,
-                display: 'flex',
-                justifyContent: 'space-around',
-                background: 'rgba(33,150,243,0.10)',
-                borderRadius: 2,
-                py: 1
-              }}>
-                {(() => {
-                  const current = fishData.filter(f => f.species === selectedSpecies);
-                  const values = current.map(f => Number(f[selectedMetric]));
-                  const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : '--';
-                  const min = values.length ? Math.min(...values).toFixed(2) : '--';
-                  const max = values.length ? Math.max(...values).toFixed(2) : '--';
-                  return (
-                    <>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>均值</Typography>
-                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{avg}</Typography>
-                      </Box>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最小值</Typography>
-                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{min}</Typography>
-                      </Box>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最大值</Typography>
-                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{max}</Typography>
-                      </Box>
-                    </>
-                  );
-                })()}
-              </Box>
+              {selectedSpecies ? (
+                <>
+                  <ButtonGroup size="small" sx={{ mb: 1 }}>
+                    {(['weight', 'length1', 'length2', 'length3', 'height', 'width'] as const).map(m => (
+                      <Button
+                        key={m}
+                        variant={selectedMetric === m ? "contained" : "outlined"}
+                        onClick={() => setSelectedMetric(m)}
+                        sx={{
+                          color: selectedMetric === m ? '#fff' : '#4fc3f7',
+                          background: selectedMetric === m ? 'linear-gradient(90deg,#0288d1,#4fc3f7)' : 'none',
+                          borderColor: '#4fc3f7'
+                        }}
+                      >
+                        {m === 'weight'
+                          ? '体重'
+                          : m === 'length1'
+                          ? '体长1'
+                          : m === 'length2'
+                          ? '体长2'
+                          : m === 'length3'
+                          ? '体长3'
+                          : m === 'height'
+                          ? '高度'
+                          : '宽度'}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+                  <ChartBox>
+                    <ResponsiveContainer>
+                      <LineChart data={makeDistribution(selectedMetric, fishData.filter(f => f.species === selectedSpecies))}>
+                        <XAxis dataKey="x" stroke="#b3e5fc" type="number" domain={['auto', 'auto']} tickCount={8} />
+                        <YAxis stroke="#b3e5fc" />
+                        <Tooltip
+                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                          labelStyle={{ color: "#fff" }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                        <Line type="monotone" dataKey="count" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartBox>
+                  {/* 统计区 */}
+                  <Box sx={{
+                    mt: 2,
+                    display: 'flex',
+                    justifyContent: 'space-around',
+                    background: 'rgba(33,150,243,0.10)',
+                    borderRadius: 2,
+                    py: 1
+                  }}>
+                    {(() => {
+                      const current = fishData.filter(f => f.species === selectedSpecies);
+                      const values = current.map(f => Number(f[selectedMetric]));
+                      const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : '--';
+                      const min = values.length ? Math.min(...values).toFixed(2) : '--';
+                      const max = values.length ? Math.max(...values).toFixed(2) : '--';
+                      return (
+                        <>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>均值</Typography>
+                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{avg}</Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最小值</Typography>
+                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{min}</Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最大值</Typography>
+                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{max}</Typography>
+                          </Box>
+                        </>
+                      );
+                    })()}
+                  </Box>
+                </>
+              ) : (
+                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                  请选择鱼种后查看分布与统计
+                </Box>
+              )}
             </CardContent>
           </SectionCard>
         </Grid>
@@ -710,48 +723,85 @@ const UnderWaterSystem: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>省份</InputLabel>
                   <Select
                     value={selectedLocation}
-                    label="省份"
                     onChange={e => setSelectedLocation(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择省份</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择省份</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
                       <MenuItem key={loc} value={loc}>{loc}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>流域</InputLabel>
                   <Select
                     value={selectedBasin}
-                    label="流域"
                     onChange={e => setSelectedBasin(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择流域</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择流域</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
                       <MenuItem key={basin} value={basin}>{basin}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>断面名称</InputLabel>
                   <Select
                     value={selectedSection}
-                    label="断面名称"
                     onChange={e => setSelectedSection(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择断面名称</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择断面名称</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
                       <MenuItem key={sec} value={sec}>{sec}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
+
                 <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>日期</InputLabel>
                   <Select
                     value={selectedDate}
-                    label="日期"
                     onChange={e => setSelectedDate(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择日期</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择日期</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h =>
                       (!selectedLocation || h.location === selectedLocation) &&
                       (!selectedBasin || h.basin === selectedBasin) &&
@@ -762,44 +812,54 @@ const UnderWaterSystem: React.FC = () => {
                   </Select>
                 </FormControl>
               </Box>
-              <ChartBox>
-                <ResponsiveContainer>
-                  <RadarChart data={waterQualityData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="label" stroke="#e3f2fd" fontSize={12} />
-                    <PolarRadiusAxis stroke="#b3e5fc" tick={{ fill: "#b3e5fc", fontSize: 12 }} />
-                    <Radar dataKey="value" stroke="#4fc3f7" fill="#0288d1" fillOpacity={0.5} />
-                    <Tooltip
-                      contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                      labelStyle={{ color: "#fff" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </ChartBox>
-              <Box sx={{ mt: 2 }}>
-                <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
-                  当前各项指标：
-                </Typography>
-                <Grid container spacing={1}>
-                  {waterQualityData.map((item) => (
-                    <Grid item xs={6} key={item.label}>
-                      <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        background: 'rgba(33,150,243,0.15)',
-                        borderRadius: '8px',
-                        px: 1,
-                        py: 0.5,
-                        mb: 0.5,
-                      }}>
-                        <span style={{ color: '#4fc3f7', fontWeight: 600, marginRight: 6 }}>{item.label}：</span>
-                        <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
-                      </Box>
+              {selectedLocation && selectedBasin && selectedSection && selectedDate ? (
+                <>
+                  <ChartBox>
+                    <ResponsiveContainer>
+                      <RadarChart data={waterQualityData}>
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="label" stroke="#e3f2fd" fontSize={12} />
+                        <PolarRadiusAxis stroke="#b3e5fc" tick={{ fill: "#b3e5fc", fontSize: 12 }} />
+                        <Radar dataKey="value" stroke="#4fc3f7" fill="#0288d1" fillOpacity={0.5} />
+                        <Tooltip
+                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                          labelStyle={{ color: "#fff" }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </ChartBox>
+                  {/* 指标文字展示 */}
+                  <Box sx={{ mt: 2 }}>
+                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
+                      当前各项指标：
+                    </Typography>
+                    <Grid container spacing={1}>
+                      {waterQualityData.map((item) => (
+                        <Grid item xs={6} key={item.label}>
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: 'rgba(33,150,243,0.15)',
+                            borderRadius: '8px',
+                            px: 1,
+                            py: 0.5,
+                            mb: 0.5,
+                          }}>
+                            <span style={{ color: '#4fc3f7', fontWeight: 600, marginRight: 6 }}>{item.label}：</span>
+                            <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
+                          </Box>
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
-              </Box>
+                  </Box>
+                  {/* 其它指标展示... */}
+                </>
+              ) : (
+                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                  请选择省份、流域、断面名称和日期后查看水质数据
+                </Box>
+              )}
             </CardContent>
           </SectionCard>
         </Grid> 
@@ -823,36 +883,63 @@ const UnderWaterSystem: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>省份</InputLabel>
                   <Select
                     value={selectedLocation}
-                    label="省份"
                     onChange={e => setSelectedLocation(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择省份</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择省份</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
                       <MenuItem key={loc} value={loc}>{loc}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>流域</InputLabel>
                   <Select
                     value={selectedBasin}
-                    label="流域"
                     onChange={e => setSelectedBasin(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择流域</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择流域</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
                       <MenuItem key={basin} value={basin}>{basin}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>断面名称</InputLabel>
                   <Select
                     value={selectedSection}
-                    label="断面名称"
                     onChange={e => setSelectedSection(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择断面名称</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择断面名称</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
                       <MenuItem key={sec} value={sec}>{sec}</MenuItem>
                     )}
@@ -862,200 +949,208 @@ const UnderWaterSystem: React.FC = () => {
               <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
                 选择指标，查看其随时间的变化趋势，并对照水质标准分级。
               </Typography>
-              {/* 指标选择按钮组 */}
-              <ButtonGroup size="small" sx={{ mb: 2 }}>
-                {waterQualityData.map((item, idx) => (
-                  <Button
-                    key={item.label}
-                    variant={selectedWqMetric === item.label ? "contained" : "outlined"}
-                    onClick={() => setSelectedWqMetric(item.label)}
-                    sx={{
-                      color: selectedWqMetric === item.label ? '#fff' : '#4fc3f7',
-                      background: selectedWqMetric === item.label ? 'linear-gradient(90deg,#0288d1,#4fc3f7)' : 'none',
-                      borderColor: '#4fc3f7'
-                    }}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
-              </ButtonGroup>
-              <ChartBox>
-                <ResponsiveContainer>
-                  <LineChart data={wqLineData}>
-                    <XAxis dataKey="date" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" />
-                    <Tooltip
-                      contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                      labelStyle={{ color: "#fff" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                    {/* 指标标准区域/线条 */}
+              {selectedLocation && selectedBasin && selectedSection ? (
+                <>
+                  {/* 指标选择按钮组 */}
+                  <ButtonGroup size="small" sx={{ mb: 2 }}>
+                    {waterQualityData.map((item, idx) => (
+                      <Button
+                        key={item.label}
+                        variant={selectedWqMetric === item.label ? "contained" : "outlined"}
+                        onClick={() => setSelectedWqMetric(item.label)}
+                        sx={{
+                          color: selectedWqMetric === item.label ? '#fff' : '#4fc3f7',
+                          background: selectedWqMetric === item.label ? 'linear-gradient(90deg,#0288d1,#4fc3f7)' : 'none',
+                          borderColor: '#4fc3f7'
+                        }}
+                      >
+                        {item.label}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+                  <ChartBox>
+                    <ResponsiveContainer>
+                      <LineChart data={wqLineData}>
+                        <XAxis dataKey="date" stroke="#b3e5fc" />
+                        <YAxis stroke="#b3e5fc" />
+                        <Tooltip
+                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                          labelStyle={{ color: "#fff" }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                        {/* 指标标准区域/线条 */}
+                        {selectedWqMetric === '溶解氧' && (
+                          <>
+                            <ReferenceArea y1={7.5} y2={100} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} /> {/* I类 */}
+                            <ReferenceArea y1={6} y2={7.5} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />   {/* II类 */}
+                            <ReferenceArea y1={5} y2={6} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />     {/* III类 */}
+                            <ReferenceArea y1={3} y2={5} strokeOpacity={0.1} fill="#01579b" fillOpacity={0.06} />     {/* IV类 */}
+                            <ReferenceArea y1={2} y2={3} strokeOpacity={0.1} fill="#004d40" fillOpacity={0.04} />     {/* V类 */}
+                            <ReferenceLine y={7.5} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={6} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={5} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={3} stroke="#01579b" strokeDasharray="3 3" />
+                            <ReferenceLine y={2} stroke="#004d40" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '高锰酸盐指数' && (
+                          <>
+                            <ReferenceArea y1={0} y2={2} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={2} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceArea y1={10} y2={15} fill="#004d40" fillOpacity={0.04} />
+                            <ReferenceLine y={2} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                            <ReferenceLine y={15} stroke="#004d40" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '化学需氧量 COD' && (
+                          <>
+                            <ReferenceArea y1={0} y2={15} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={15} y2={20} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={20} y2={30} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={30} y2={40} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceLine y={15} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={20} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={30} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={40} stroke="#01579b" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '五日生化需氧量 BOD₅' && (
+                          <>
+                            <ReferenceArea y1={0} y2={3} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={3} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceLine y={3} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '氨氮' && (
+                          <>
+                            <ReferenceArea y1={0} y2={0.15} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={0.15} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                            <ReferenceLine y={0.15} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                            <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '总磷' && (
+                          <>
+                            <ReferenceArea y1={0} y2={0.01} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={0.01} y2={0.025} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={0.025} y2={0.05} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={0.05} y2={0.1} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceArea y1={0.1} y2={0.2} fill="#004d40" fillOpacity={0.04} />
+                            <ReferenceLine y={0.01} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.025} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.05} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.1} stroke="#01579b" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.2} stroke="#004d40" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        {selectedWqMetric === '总氮' && (
+                          <>
+                            <ReferenceArea y1={0} y2={0.2} fill="#81d4fa" fillOpacity={0.18} />
+                            <ReferenceArea y1={0.2} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                            <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                            <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                            <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                            <ReferenceLine y={0.2} stroke="#81d4fa" strokeDasharray="3 3" />
+                            <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                            <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                            <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                            <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                          </>
+                        )}
+                        <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartBox>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
+                      指标标准说明：
+                    </Typography>
                     {selectedWqMetric === '溶解氧' && (
-                      <>
-                        <ReferenceArea y1={7.5} y2={100} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} /> {/* I类 */}
-                        <ReferenceArea y1={6} y2={7.5} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />   {/* II类 */}
-                        <ReferenceArea y1={5} y2={6} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />     {/* III类 */}
-                        <ReferenceArea y1={3} y2={5} strokeOpacity={0.1} fill="#01579b" fillOpacity={0.06} />     {/* IV类 */}
-                        <ReferenceArea y1={2} y2={3} strokeOpacity={0.1} fill="#004d40" fillOpacity={0.04} />     {/* V类 */}
-                        <ReferenceLine y={7.5} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={6} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={5} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={3} stroke="#01579b" strokeDasharray="3 3" />
-                        <ReferenceLine y={2} stroke="#004d40" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≥7.5（或饱和率90%）</li>
+                        <li>II类：≥6</li>
+                        <li>III类：≥5</li>
+                        <li>IV类：≥3</li>
+                        <li>V类：≥2</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '高锰酸盐指数' && (
-                      <>
-                        <ReferenceArea y1={0} y2={2} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={2} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceArea y1={10} y2={15} fill="#004d40" fillOpacity={0.04} />
-                        <ReferenceLine y={2} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
-                        <ReferenceLine y={15} stroke="#004d40" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤2</li>
+                        <li>II类：≤4</li>
+                        <li>III类：≤6</li>
+                        <li>IV类：≤10</li>
+                        <li>V类：≤15</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '化学需氧量 COD' && (
-                      <>
-                        <ReferenceArea y1={0} y2={15} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={15} y2={20} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={20} y2={30} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={30} y2={40} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceLine y={15} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={20} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={30} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={40} stroke="#01579b" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤15</li>
+                        <li>II类：≤15</li>
+                        <li>III类：≤20</li>
+                        <li>IV类：≤30</li>
+                        <li>V类：≤40</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '五日生化需氧量 BOD₅' && (
-                      <>
-                        <ReferenceArea y1={0} y2={3} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={3} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceLine y={3} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤3</li>
+                        <li>II类：≤3</li>
+                        <li>III类：≤4</li>
+                        <li>IV类：≤6</li>
+                        <li>V类：≤10</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '氨氮' && (
-                      <>
-                        <ReferenceArea y1={0} y2={0.15} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={0.15} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
-                        <ReferenceLine y={0.15} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
-                        <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤0.15</li>
+                        <li>II类：≤0.5</li>
+                        <li>III类：≤1.0</li>
+                        <li>IV类：≤1.5</li>
+                        <li>V类：≤2.0</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '总磷' && (
-                      <>
-                        <ReferenceArea y1={0} y2={0.01} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={0.01} y2={0.025} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={0.025} y2={0.05} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={0.05} y2={0.1} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceArea y1={0.1} y2={0.2} fill="#004d40" fillOpacity={0.04} />
-                        <ReferenceLine y={0.01} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.025} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.05} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.1} stroke="#01579b" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.2} stroke="#004d40" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤0.01</li>
+                        <li>II类：≤0.025</li>
+                        <li>III类：≤0.05</li>
+                        <li>IV类：≤0.1</li>
+                        <li>V类：≤0.2</li>
+                      </ul>
                     )}
                     {selectedWqMetric === '总氮' && (
-                      <>
-                        <ReferenceArea y1={0} y2={0.2} fill="#81d4fa" fillOpacity={0.18} />
-                        <ReferenceArea y1={0.2} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
-                        <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
-                        <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
-                        <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
-                        <ReferenceLine y={0.2} stroke="#81d4fa" strokeDasharray="3 3" />
-                        <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
-                        <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
-                        <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
-                        <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
-                      </>
+                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
+                        <li>I类：≤0.2</li>
+                        <li>II类：≤0.5</li>
+                        <li>III类：≤1.0</li>
+                        <li>IV类：≤1.5</li>
+                        <li>V类：≤2.0</li>
+                      </ul>
                     )}
-                    <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartBox>
-              <Box sx={{ mt: 2 }}>
-                <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
-                  指标标准说明：
-                </Typography>
-                {selectedWqMetric === '溶解氧' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≥7.5（或饱和率90%）</li>
-                    <li>II类：≥6</li>
-                    <li>III类：≥5</li>
-                    <li>IV类：≥3</li>
-                    <li>V类：≥2</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '高锰酸盐指数' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤2</li>
-                    <li>II类：≤4</li>
-                    <li>III类：≤6</li>
-                    <li>IV类：≤10</li>
-                    <li>V类：≤15</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '化学需氧量 COD' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤15</li>
-                    <li>II类：≤15</li>
-                    <li>III类：≤20</li>
-                    <li>IV类：≤30</li>
-                    <li>V类：≤40</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '五日生化需氧量 BOD₅' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤3</li>
-                    <li>II类：≤3</li>
-                    <li>III类：≤4</li>
-                    <li>IV类：≤6</li>
-                    <li>V类：≤10</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '氨氮' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.15</li>
-                    <li>II类：≤0.5</li>
-                    <li>III类：≤1.0</li>
-                    <li>IV类：≤1.5</li>
-                    <li>V类：≤2.0</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '总磷' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.01</li>
-                    <li>II类：≤0.025</li>
-                    <li>III类：≤0.05</li>
-                    <li>IV类：≤0.1</li>
-                    <li>V类：≤0.2</li>
-                  </ul>
-                )}
-                {selectedWqMetric === '总氮' && (
-                  <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                    <li>I类：≤0.2</li>
-                    <li>II类：≤0.5</li>
-                    <li>III类：≤1.0</li>
-                    <li>IV类：≤1.5</li>
-                    <li>V类：≤2.0</li>
-                  </ul>
-                )}
-              </Box>
+                  </Box>
+                </>
+              ) : (
+                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                  请选择省份、流域、断面名称后查看水质指标变化
+                </Box>
+              )}
             </CardContent>
           </SectionCard>
         </Grid>
@@ -1083,36 +1178,63 @@ const UnderWaterSystem: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>省份</InputLabel>
                   <Select
                     value={selectedLocation}
-                    label="省份"
                     onChange={e => setSelectedLocation(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择省份</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择省份</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.map(h => h.location))).map(loc =>
                       <MenuItem key={loc} value={loc}>{loc}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel>流域</InputLabel>
                   <Select
                     value={selectedBasin}
-                    label="流域"
                     onChange={e => setSelectedBasin(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择流域</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择流域</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => !selectedLocation || h.location === selectedLocation).map(h => h.basin))).map(basin =>
                       <MenuItem key={basin} value={basin}>{basin}</MenuItem>
                     )}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>断面名称</InputLabel>
                   <Select
                     value={selectedSection}
-                    label="断面名称"
                     onChange={e => setSelectedSection(e.target.value)}
+                    displayEmpty
+                    renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择断面名称</span>}
+                    sx={{
+                      color: '#e3f2fd',
+                      '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+                      '.MuiSvgIcon-root': { color: '#4fc3f7' }
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>请选择断面名称</em>
+                    </MenuItem>
                     {Array.from(new Set(hydroList.filter(h => (!selectedLocation || h.location === selectedLocation) && (!selectedBasin || h.basin === selectedBasin)).map(h => h.section_name))).map(sec =>
                       <MenuItem key={sec} value={sec}>{sec}</MenuItem>
                     )}
@@ -1122,34 +1244,42 @@ const UnderWaterSystem: React.FC = () => {
               <Typography sx={{ color: '#e3f2fd', fontSize: 14, mb: 1 }}>
                 展示环境评分随时间的变化趋势，便于动态监控水体健康状况。
               </Typography>
-              <ChartBox>
-                <ResponsiveContainer>
-                  <LineChart data={envScoreLineData}>
-                    <XAxis dataKey="date" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" domain={[2, 5]} />
-                    <Tooltip
-                      contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                      labelStyle={{ color: "#fff" }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                    <Line type="monotone" dataKey="score" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartBox>
-              <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15 }}>
-                  当前综合评分：<span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{score}</span>
-                </Typography>
-              </Box>
-              <Box sx={{ mt: 2, color: '#b3e5fc', fontSize: 14 }}>
-                <Typography sx={{ fontWeight: 500, mb: 1 }}>
-                  环境评分标准说明：
-                </Typography>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  <li>每项指标按国家标准分级，I类得5分，II类4分，III类3分，IV类2分，V类1分，超V类0分。</li>
-                  <li>最终评分为各项得分的平均值。</li>
-                </ul>
-              </Box>
+              {selectedLocation && selectedBasin && selectedSection ? (
+                <>
+                  <ChartBox>
+                    <ResponsiveContainer>
+                      <LineChart data={envScoreLineData}>
+                        <XAxis dataKey="date" stroke="#b3e5fc" />
+                        <YAxis stroke="#b3e5fc" domain={[2, 5]} />
+                        <Tooltip
+                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                          labelStyle={{ color: "#fff" }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                        <Line type="monotone" dataKey="score" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartBox>
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15 }}>
+                      当前综合评分：<span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{score}</span>
+                    </Typography>
+                  </Box>
+                  <Box sx={{ mt: 2, color: '#b3e5fc', fontSize: 14 }}>
+                    <Typography sx={{ fontWeight: 500, mb: 1 }}>
+                      环境评分标准说明：
+                    </Typography>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <li>每项指标按国家标准分级，I类得5分，II类4分，III类3分，IV类2分，V类1分，超V类0分。</li>
+                      <li>最终评分为各项得分的平均值。</li>
+                    </ul>
+                  </Box>
+                </>
+              ) : (
+                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                  请选择省份、流域、断面名称后查看环境评分变化
+                </Box>
+              )}
             </CardContent>
           </SectionCard>
         </Grid>
@@ -1157,5 +1287,5 @@ const UnderWaterSystem: React.FC = () => {
     </>
   );
 };
-
-export default UnderWaterSystem;
+    
+    export default UnderWaterSystem;
