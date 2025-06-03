@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import DownloadIcon from '@mui/icons-material/Download';
+import { toPng } from 'html-to-image';
 import {
   Card,
   CardContent,
@@ -163,7 +165,73 @@ const UnderWaterSystem: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedWqMetric, setSelectedWqMetric] = useState<string>("pH");
+  const chartRef = useRef<HTMLDivElement>(null);
+  const pieChartRef = useRef<HTMLDivElement>(null);
+  const barChartRef = useRef<HTMLDivElement>(null);
+  const radarChartRef = useRef<HTMLDivElement>(null);
+  const wqChartRef = useRef<HTMLDivElement>(null);
+  const envScoreChartRef = useRef<HTMLDivElement>(null);
 
+  const handleDownloadRadar = () => {
+    if (radarChartRef.current) {
+      toPng(radarChartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = '水质雷达图.png';
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
+  const handleDownloadChart = () => {
+    if (chartRef.current) {
+      toPng(chartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `${selectedSpecies || '鱼群'}属性分布.png`;
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
+  const handleDownloadPie = () => {
+    if (pieChartRef.current) {
+      toPng(pieChartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = '鱼类品种分布.png';
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
+  const handleDownloadBar = () => {
+    if (barChartRef.current) {
+      toPng(barChartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = '各鱼种数量柱状图.png';
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
+  const handleDownloadWqChart = () => {
+    if (wqChartRef.current) {
+      toPng(wqChartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `${selectedWqMetric || '水质指标'}变化.png`;
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
+  const handleDownloadEnvScoreChart = () => {
+    if (envScoreChartRef.current) {
+      toPng(envScoreChartRef.current, { backgroundColor: '#182848' }).then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = '环境评分变化.png';
+        link.href = dataUrl;
+        link.click();
+      });
+    }
+  };
   useEffect(() => {
     fetch("/api/hydrodata")
       .then(res => res.json())
@@ -386,20 +454,33 @@ const UnderWaterSystem: React.FC = () => {
                       </Button>
                     ))}
                   </ButtonGroup>
-                  <ChartBox>
-                    <ResponsiveContainer>
-                      <LineChart data={makeDistribution(selectedMetric, fishData.filter(f => f.species === selectedSpecies))}>
-                        <XAxis dataKey="x" stroke="#b3e5fc" type="number" domain={['auto', 'auto']} tickCount={8} />
-                        <YAxis stroke="#b3e5fc" />
-                        <Tooltip
-                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                          labelStyle={{ color: "#fff" }}
-                          itemStyle={{ color: "#fff" }}
-                        />
-                        <Line type="monotone" dataKey="count" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartBox>
+                  <Box sx={{ position: 'relative' }}>
+                    <Box ref={chartRef}>
+                      <ChartBox>
+                        <ResponsiveContainer>
+                          <LineChart data={makeDistribution(selectedMetric, fishData.filter(f => f.species === selectedSpecies))}>
+                            <XAxis dataKey="x" stroke="#b3e5fc" type="number" domain={['auto', 'auto']} tickCount={8} />
+                            <YAxis stroke="#b3e5fc" />
+                            <Tooltip
+                              contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                              labelStyle={{ color: "#fff" }}
+                              itemStyle={{ color: "#fff" }}
+                            />
+                            <Line type="monotone" dataKey="count" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartBox>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2, color: '#4fc3f7', borderColor: '#4fc3f7', background: 'rgba(0,0,0,0.12)' }}
+                      onClick={handleDownloadChart}
+                    >
+                      下载图表
+                    </Button>
+                  </Box>
                   {/* 统计区 */}
                   <Box sx={{
                     mt: 2,
@@ -489,7 +570,7 @@ const UnderWaterSystem: React.FC = () => {
                   letterSpacing: 4,
                   mb: 1,
                   mt: 1,
-                  fontSize: { xs: 36, md: 54, lg: 64 },
+                  fontSize: { xs: 28, md: 44, lg: 54 },
                   background: 'linear-gradient(90deg,#4fc3f7 20%,#0288d1 80%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -662,38 +743,76 @@ const UnderWaterSystem: React.FC = () => {
                 展示当前水体内鱼类的整体分布与种群数量。
               </Typography>
               {/* 品种分布饼图 */}
-              <Box sx={{ width: '100%', height: 180, mb: 2 }}>
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={60}
-                      fill="#4fc3f7"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {pieChartData.map((entry, idx) => (
-                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+              <Box sx={{ width: '100%', height: 180, mb: 2, position: 'relative' }}>
+                <Box ref={pieChartRef} sx={{ width: '100%', height: 180 }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={60}
+                        fill="#4fc3f7"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {pieChartData.map((entry, idx) => (
+                          <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 2,
+                    color: '#4fc3f7',
+                    borderColor: '#4fc3f7',
+                    background: 'rgba(0,0,0,0.12)'
+                  }}
+                  onClick={handleDownloadPie}
+                >
+                  下载饼图
+                </Button>
               </Box>
               {/* 平均值柱状图 */}
               {/* 各鱼种数量柱状图 */}
-              <Box sx={{ width: '100%', height: 120 }}>
-                <ResponsiveContainer>
-                  <BarChart data={speciesBarData}>
-                    <XAxis dataKey="name" stroke="#b3e5fc" />
-                    <YAxis stroke="#b3e5fc" allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#0288d1" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <Box sx={{ width: '100%', height: 120, mb: 2, position: 'relative'  }}>
+                <Box ref={barChartRef} sx={{ width: '100%', height: 120 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={speciesBarData}>
+                      <XAxis dataKey="name" stroke="#b3e5fc" />
+                      <YAxis stroke="#b3e5fc" allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#0288d1" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 2,
+                    color: '#4fc3f7',
+                    borderColor: '#4fc3f7',
+                    background: 'rgba(0,0,0,0.12)'
+                  }}
+                  onClick={handleDownloadBar}
+                >
+                  下载柱状图
+                </Button>
               </Box>
             </CardContent>
           </SectionCard>
@@ -814,21 +933,42 @@ const UnderWaterSystem: React.FC = () => {
               </Box>
               {selectedLocation && selectedBasin && selectedSection && selectedDate ? (
                 <>
-                  <ChartBox>
-                    <ResponsiveContainer>
-                      <RadarChart data={waterQualityData}>
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="label" stroke="#e3f2fd" fontSize={12} />
-                        <PolarRadiusAxis stroke="#b3e5fc" tick={{ fill: "#b3e5fc", fontSize: 12 }} />
-                        <Radar dataKey="value" stroke="#4fc3f7" fill="#0288d1" fillOpacity={0.5} />
-                        <Tooltip
-                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                          labelStyle={{ color: "#fff" }}
-                          itemStyle={{ color: "#fff" }}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </ChartBox>
+                  <Box sx={{ position: 'relative' }}>
+                    <Box ref={radarChartRef}>
+                      <ChartBox>
+                        <ResponsiveContainer>
+                          <RadarChart data={waterQualityData}>
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="label" stroke="#e3f2fd" fontSize={12} />
+                            <PolarRadiusAxis stroke="#b3e5fc" tick={{ fill: "#b3e5fc", fontSize: 12 }} />
+                            <Radar dataKey="value" stroke="#4fc3f7" fill="#0288d1" fillOpacity={0.5} />
+                            <Tooltip
+                              contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                              labelStyle={{ color: "#fff" }}
+                              itemStyle={{ color: "#fff" }}
+                            />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </ChartBox>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 2,
+                        color: '#4fc3f7',
+                        borderColor: '#4fc3f7',
+                        background: 'rgba(0,0,0,0.12)'
+                      }}
+                      onClick={handleDownloadRadar}
+                    >
+                      下载雷达图
+                    </Button>
+                  </Box>
                   {/* 指标文字展示 */}
                   <Box sx={{ mt: 2 }}>
                     <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
@@ -879,6 +1019,10 @@ const UnderWaterSystem: React.FC = () => {
                 <span style={{ marginRight: 8 }}>水质指标变化</span>
                 <svg width="32" height="12" viewBox="0 0 32 12" fill="none">
                   <path d="M0 6 Q8 0 16 6 T32 6" stroke="#4fc3f7" strokeWidth="2" fill="none" />
+                </svg>
+                <svg width="20" height="20" style={{ marginLeft: 8 }} viewBox="0 0 20 20" fill="none">
+                  <ellipse cx="10" cy="15" rx="6" ry="3" fill="#4fc3f7" fillOpacity="0.3"/>
+                  <path d="M10 2 C13 7, 16 11, 10 18 C4 11, 7 7, 10 2 Z" fill="#4fc3f7" fillOpacity="0.7"/>
                 </svg>
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -968,182 +1112,144 @@ const UnderWaterSystem: React.FC = () => {
                       </Button>
                     ))}
                   </ButtonGroup>
-                  <ChartBox>
-                    <ResponsiveContainer>
-                      <LineChart data={wqLineData}>
-                        <XAxis dataKey="date" stroke="#b3e5fc" />
-                        <YAxis stroke="#b3e5fc" />
-                        <Tooltip
-                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                          labelStyle={{ color: "#fff" }}
-                          itemStyle={{ color: "#fff" }}
-                        />
-                        {/* 指标标准区域/线条 */}
-                        {selectedWqMetric === '溶解氧' && (
-                          <>
-                            <ReferenceArea y1={7.5} y2={100} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} /> {/* I类 */}
-                            <ReferenceArea y1={6} y2={7.5} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />   {/* II类 */}
-                            <ReferenceArea y1={5} y2={6} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />     {/* III类 */}
-                            <ReferenceArea y1={3} y2={5} strokeOpacity={0.1} fill="#01579b" fillOpacity={0.06} />     {/* IV类 */}
-                            <ReferenceArea y1={2} y2={3} strokeOpacity={0.1} fill="#004d40" fillOpacity={0.04} />     {/* V类 */}
-                            <ReferenceLine y={7.5} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={6} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={5} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={3} stroke="#01579b" strokeDasharray="3 3" />
-                            <ReferenceLine y={2} stroke="#004d40" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '高锰酸盐指数' && (
-                          <>
-                            <ReferenceArea y1={0} y2={2} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={2} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceArea y1={10} y2={15} fill="#004d40" fillOpacity={0.04} />
-                            <ReferenceLine y={2} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
-                            <ReferenceLine y={15} stroke="#004d40" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '化学需氧量 COD' && (
-                          <>
-                            <ReferenceArea y1={0} y2={15} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={15} y2={20} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={20} y2={30} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={30} y2={40} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceLine y={15} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={20} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={30} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={40} stroke="#01579b" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '五日生化需氧量 BOD₅' && (
-                          <>
-                            <ReferenceArea y1={0} y2={3} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={3} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceLine y={3} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '氨氮' && (
-                          <>
-                            <ReferenceArea y1={0} y2={0.15} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={0.15} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
-                            <ReferenceLine y={0.15} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
-                            <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '总磷' && (
-                          <>
-                            <ReferenceArea y1={0} y2={0.01} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={0.01} y2={0.025} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={0.025} y2={0.05} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={0.05} y2={0.1} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceArea y1={0.1} y2={0.2} fill="#004d40" fillOpacity={0.04} />
-                            <ReferenceLine y={0.01} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.025} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.05} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.1} stroke="#01579b" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.2} stroke="#004d40" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        {selectedWqMetric === '总氮' && (
-                          <>
-                            <ReferenceArea y1={0} y2={0.2} fill="#81d4fa" fillOpacity={0.18} />
-                            <ReferenceArea y1={0.2} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
-                            <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
-                            <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
-                            <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
-                            <ReferenceLine y={0.2} stroke="#81d4fa" strokeDasharray="3 3" />
-                            <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
-                            <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
-                            <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
-                            <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
-                          </>
-                        )}
-                        <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartBox>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
-                      指标标准说明：
+                  <Box sx={{ position: 'relative' }}>
+                    <Box ref={wqChartRef}>
+                      <ChartBox>
+                        <ResponsiveContainer>
+                          <LineChart data={wqLineData}>
+                            <XAxis dataKey="date" stroke="#b3e5fc" />
+                            <YAxis stroke="#b3e5fc" />
+                            <Tooltip
+                              contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                              labelStyle={{ color: "#fff" }}
+                              itemStyle={{ color: "#fff" }}
+                            />
+                            {/* 指标标准区域/线条 */}
+                            {selectedWqMetric === '溶解氧' && (
+                              <>
+                                <ReferenceArea y1={7.5} y2={100} strokeOpacity={0.1} fill="#81d4fa" fillOpacity={0.18} /> {/* I类 */}
+                                <ReferenceArea y1={6} y2={7.5} strokeOpacity={0.1} fill="#4fc3f7" fillOpacity={0.12} />   {/* II类 */}
+                                <ReferenceArea y1={5} y2={6} strokeOpacity={0.1} fill="#0288d1" fillOpacity={0.08} />     {/* III类 */}
+                                <ReferenceArea y1={3} y2={5} strokeOpacity={0.1} fill="#01579b" fillOpacity={0.06} />     {/* IV类 */}
+                                <ReferenceArea y1={2} y2={3} strokeOpacity={0.1} fill="#004d40" fillOpacity={0.04} />     {/* V类 */}
+                                <ReferenceLine y={7.5} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={6} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={5} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={3} stroke="#01579b" strokeDasharray="3 3" />
+                                <ReferenceLine y={2} stroke="#004d40" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '高锰酸盐指数' && (
+                              <>
+                                <ReferenceArea y1={0} y2={2} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={2} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceArea y1={10} y2={15} fill="#004d40" fillOpacity={0.04} />
+                                <ReferenceLine y={2} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                                <ReferenceLine y={15} stroke="#004d40" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '化学需氧量 COD' && (
+                              <>
+                                <ReferenceArea y1={0} y2={15} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={15} y2={20} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={20} y2={30} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={30} y2={40} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceLine y={15} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={20} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={30} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={40} stroke="#01579b" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '五日生化需氧量 BOD₅' && (
+                              <>
+                                <ReferenceArea y1={0} y2={3} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={3} y2={4} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={4} y2={6} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={6} y2={10} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceLine y={3} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={4} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={6} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={10} stroke="#01579b" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '氨氮' && (
+                              <>
+                                <ReferenceArea y1={0} y2={0.15} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={0.15} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                                <ReferenceLine y={0.15} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                                <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '总磷' && (
+                              <>
+                                <ReferenceArea y1={0} y2={0.01} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={0.01} y2={0.025} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={0.025} y2={0.05} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={0.05} y2={0.1} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceArea y1={0.1} y2={0.2} fill="#004d40" fillOpacity={0.04} />
+                                <ReferenceLine y={0.01} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.025} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.05} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.1} stroke="#01579b" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.2} stroke="#004d40" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            {selectedWqMetric === '总氮' && (
+                              <>
+                                <ReferenceArea y1={0} y2={0.2} fill="#81d4fa" fillOpacity={0.18} />
+                                <ReferenceArea y1={0.2} y2={0.5} fill="#4fc3f7" fillOpacity={0.12} />
+                                <ReferenceArea y1={0.5} y2={1.0} fill="#0288d1" fillOpacity={0.08} />
+                                <ReferenceArea y1={1.0} y2={1.5} fill="#01579b" fillOpacity={0.06} />
+                                <ReferenceArea y1={1.5} y2={2.0} fill="#004d40" fillOpacity={0.04} />
+                                <ReferenceLine y={0.2} stroke="#81d4fa" strokeDasharray="3 3" />
+                                <ReferenceLine y={0.5} stroke="#4fc3f7" strokeDasharray="3 3" />
+                                <ReferenceLine y={1.0} stroke="#0288d1" strokeDasharray="3 3" />
+                                <ReferenceLine y={1.5} stroke="#01579b" strokeDasharray="3 3" />
+                                <ReferenceLine y={2.0} stroke="#004d40" strokeDasharray="3 3" />
+                              </>
+                            )}
+                            <Line type="monotone" dataKey="value" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartBox>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 2,
+                        color: '#4fc3f7',
+                        borderColor: '#4fc3f7',
+                        background: 'rgba(0,0,0,0.12)'
+                      }}
+                      onClick={handleDownloadWqChart}
+                    >
+                      下载图表
+                    </Button>
+                  </Box>
+                  <Box sx={{ mt: 2, color: '#b3e5fc', fontSize: 14 }}>
+                    <Typography sx={{ fontWeight: 500, mb: 1 }}>
+                      环境评分标准说明：
                     </Typography>
-                    {selectedWqMetric === '溶解氧' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≥7.5（或饱和率90%）</li>
-                        <li>II类：≥6</li>
-                        <li>III类：≥5</li>
-                        <li>IV类：≥3</li>
-                        <li>V类：≥2</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '高锰酸盐指数' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤2</li>
-                        <li>II类：≤4</li>
-                        <li>III类：≤6</li>
-                        <li>IV类：≤10</li>
-                        <li>V类：≤15</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '化学需氧量 COD' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤15</li>
-                        <li>II类：≤15</li>
-                        <li>III类：≤20</li>
-                        <li>IV类：≤30</li>
-                        <li>V类：≤40</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '五日生化需氧量 BOD₅' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤3</li>
-                        <li>II类：≤3</li>
-                        <li>III类：≤4</li>
-                        <li>IV类：≤6</li>
-                        <li>V类：≤10</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '氨氮' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤0.15</li>
-                        <li>II类：≤0.5</li>
-                        <li>III类：≤1.0</li>
-                        <li>IV类：≤1.5</li>
-                        <li>V类：≤2.0</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '总磷' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤0.01</li>
-                        <li>II类：≤0.025</li>
-                        <li>III类：≤0.05</li>
-                        <li>IV类：≤0.1</li>
-                        <li>V类：≤0.2</li>
-                      </ul>
-                    )}
-                    {selectedWqMetric === '总氮' && (
-                      <ul style={{ color: '#e3f2fd', fontSize: 13, margin: 0, paddingLeft: 18 }}>
-                        <li>I类：≤0.2</li>
-                        <li>II类：≤0.5</li>
-                        <li>III类：≤1.0</li>
-                        <li>IV类：≤1.5</li>
-                        <li>V类：≤2.0</li>
-                      </ul>
-                    )}
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <li>每项指标按国家标准分级，I类得5分，II类4分，III类3分，IV类2分，V类1分，超V类0分。</li>
+                      <li>最终评分为各项得分的平均值。</li>
+                    </ul>
                   </Box>
                 </>
               ) : (
@@ -1246,24 +1352,40 @@ const UnderWaterSystem: React.FC = () => {
               </Typography>
               {selectedLocation && selectedBasin && selectedSection ? (
                 <>
-                  <ChartBox>
-                    <ResponsiveContainer>
-                      <LineChart data={envScoreLineData}>
-                        <XAxis dataKey="date" stroke="#b3e5fc" />
-                        <YAxis stroke="#b3e5fc" domain={[2, 5]} />
-                        <Tooltip
-                          contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
-                          labelStyle={{ color: "#fff" }}
-                          itemStyle={{ color: "#fff" }}
-                        />
-                        <Line type="monotone" dataKey="score" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartBox>
-                  <Box sx={{ mt: 2, textAlign: 'center' }}>
-                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15 }}>
-                      当前综合评分：<span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{score}</span>
-                    </Typography>
+                  <Box sx={{ position: 'relative' }}>
+                    <Box ref={envScoreChartRef}>
+                      <ChartBox>
+                        <ResponsiveContainer>
+                          <LineChart data={envScoreLineData}>
+                            <XAxis dataKey="date" stroke="#b3e5fc" />
+                            <YAxis stroke="#b3e5fc" domain={[2, 5]} />
+                            <Tooltip
+                              contentStyle={{ background: "rgba(2,119,189,0.8)", border: "none", color: "#fff" }}
+                              labelStyle={{ color: "#fff" }}
+                              itemStyle={{ color: "#fff" }}
+                            />
+                            <Line type="monotone" dataKey="score" stroke="#4fc3f7" strokeWidth={3} dot={{ r: 5, fill: "#0288d1" }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartBox>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 2,
+                        color: '#4fc3f7',
+                        borderColor: '#4fc3f7',
+                        background: 'rgba(0,0,0,0.12)'
+                      }}
+                      onClick={handleDownloadEnvScoreChart}
+                    >
+                      下载图表
+                    </Button>
                   </Box>
                   <Box sx={{ mt: 2, color: '#b3e5fc', fontSize: 14 }}>
                     <Typography sx={{ fontWeight: 500, mb: 1 }}>
@@ -1289,3 +1411,4 @@ const UnderWaterSystem: React.FC = () => {
 };
     
     export default UnderWaterSystem;
+

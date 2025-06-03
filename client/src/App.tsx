@@ -22,7 +22,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <Header />
-        <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Container maxWidth={false} sx={{ mt: 4 }}>
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />

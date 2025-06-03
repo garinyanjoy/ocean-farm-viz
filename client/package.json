@@ -17,6 +17,7 @@
     "@types/styled-components": "^5.1.34",
     "antd": "^5.25.1",
     "axios": "^1.6.8",
+    "html-to-image": "^1.11.13",
     "react": "^18.3.1",
     "react-baidu-maps": "^1.0.13",
     "react-dom": "^18.3.1",

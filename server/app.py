@@ -16,7 +16,7 @@ CORS(app)
 
 # Read database connection details from environment variables
 db_user = os.getenv('DB_USER', 'root')
-db_password = os.getenv('DB_PASSWORD', 'lbr200424')
+db_password = os.getenv('DB_PASSWORD', '123456')
 db_host = os.getenv('DB_HOST', '127.0.0.1')
 db_port = os.getenv('DB_PORT', '3306')
 db_name = os.getenv('DB_NAME', 'ocean-monitor')
