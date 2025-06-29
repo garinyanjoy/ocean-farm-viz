@@ -262,31 +262,66 @@ def import_fish_from_csv():
 # 添加模拟的监控数据API
 @app.route("/api/monitoring-data", methods=["GET"])
 def get_monitoring_data():
-    """提供模拟的监控数据"""
+    """提供从数据库获取的最新监控数据并生成警报"""
+    # 获取最新的水质数据记录
+    latest_hydrodata = HydroData.query.order_by(HydroData.date.desc(), HydroData.id.desc()).first()
+
+    if not latest_hydrodata:
+        return jsonify({"error": "No data available"}), 404
+
+    # 定义安全阈值
+    thresholds = {
+        "water_temperature": {"min_warn": 10, "max_warn": 28, "min_crit": 5, "max_crit": 32},
+        "pH": {"min_warn": 6.5, "max_warn": 8.5, "min_crit": 6.0, "max_crit": 9.0},
+        "dissolved_oxygen": {"min_warn": 4, "min_crit": 2}
+    }
+
+    alerts = []
+    # Fallback to default values if data is missing
+    env_data = {
+        "water_temperature": latest_hydrodata.water_temperature if latest_hydrodata.water_temperature is not None else 22.5,
+        "depth": 15.3,  # 假设深度为静态值
+        "visibility": "良好", # 假设为静态值
+        "dissolved_oxygen": latest_hydrodata.dissolved_oxygen if latest_hydrodata.dissolved_oxygen is not None else 7.2,
+        "pH": latest_hydrodata.pH if latest_hydrodata.pH is not None else 7.8
+    }
+
+    # 检查水温
+    temp = env_data["water_temperature"]
+    if temp < thresholds["water_temperature"]["min_crit"] or temp > thresholds["water_temperature"]["max_crit"]:
+        alerts.append({"type": "water_quality", "level": "critical", "message": f"水温严重异常: {temp}°C"})
+    elif temp < thresholds["water_temperature"]["min_warn"] or temp > thresholds["water_temperature"]["max_warn"]:
+        alerts.append({"type": "water_quality", "level": "warning", "message": f"水温警告: {temp}°C"})
+
+    # 检查pH值
+    ph = env_data["pH"]
+    if ph < thresholds["pH"]["min_crit"] or ph > thresholds["pH"]["max_crit"]:
+        alerts.append({"type": "water_quality", "level": "critical", "message": f"pH值严重异常: {ph}"})
+    elif ph < thresholds["pH"]["min_warn"] or ph > thresholds["pH"]["max_warn"]:
+        alerts.append({"type": "water_quality", "level": "warning", "message": f"pH值警告: {ph}"})
+
+    # 检查溶解氧
+    oxygen = env_data["dissolved_oxygen"]
+    if oxygen < thresholds["dissolved_oxygen"]["min_crit"]:
+        alerts.append({"type": "water_quality", "level": "critical", "message": f"溶解氧严重不足: {oxygen} mg/L"})
+    elif oxygen < thresholds["dissolved_oxygen"]["min_warn"]:
+        alerts.append({"type": "water_quality", "level": "warning", "message": f"溶解氧警告: {oxygen} mg/L"})
+
+    if not alerts:
+        alerts.append({"type": "water_quality", "level": "info", "message": "水质参数正常"})
+
     monitoring_data = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "camera_id": "CAM-001",
-        "location": "东海海域-A区",
-        "environment": {
-            "water_temperature": 22.5,
-            "depth": 15.3,
-            "visibility": "良好",
-            "dissolved_oxygen": 7.2,
-            "pH": 7.8
-        },
+        "location": latest_hydrodata.section_name or "东海海域-A区",
+        "environment": env_data,
         "fish_activity": {
             "count": 320,
             "main_species": "黄鱼、带鱼",
             "movement_level": "活跃",
             "health_status": "良好"
         },
-        "alerts": [
-            {
-                "type": "water_quality",
-                "level": "info",
-                "message": "水质参数正常"
-            }
-        ]
+        "alerts": alerts
     }
     return jsonify(monitoring_data)
 
