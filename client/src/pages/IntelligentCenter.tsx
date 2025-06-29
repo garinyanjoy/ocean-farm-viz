@@ -1,38 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { Upload, Button, message, Input } from 'antd';
-import { InboxOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { Upload, Button, message, Input, Select } from 'antd';
+import { InboxOutlined, EnvironmentOutlined, BugOutlined  } from '@ant-design/icons';
 
 const Container = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 16px;
   height: calc(100vh - 160px);
-  padding: px;
-  background:rgb(255, 255, 255);
+  padding: 0px;
+  background: rgb(255, 255, 255);
 `;
 
-// ========== 智能问答区域 ==========
-const ChatSection = styled.div`
-  background:rgb(255, 255, 255);
+// ========== 通用样式 ==========
+const SectionBase = styled.div`
+  background: rgb(255, 255, 255);
   border-radius: 8px;
   padding: 16px;
   display: flex;
   flex-direction: column;
 `;
 
-const ChatHeader = styled.h2`
+const SectionHeader = styled.h2`
   text-align: center;
   margin: 0 0 16px 0;
   color: #1890ff;
 `;
+
+// ========== 智能问答区域 ==========
+const ChatSection = styled(SectionBase)``;
 
 const ChatMessages = styled.div`
   flex: 1;
   overflow-y: auto;
   margin-bottom: 16px;
   padding: 8px;
-  border: 1px solidrgb(79, 128, 202);
+  border: 1px solid rgb(79, 128, 202);
   border-radius: 4px;
 `;
 
@@ -40,13 +43,13 @@ const MessageBubble = styled.div<{ $isAssistant: boolean }>`
   max-width: 80%;
   padding: 8px 12px;
   margin: 8px;
-  border-radius: ${props => 
+  border-radius: ${props =>
     props.$isAssistant ? '12px 12px 12px 0' : '12px 12px 0 12px'};
-  background: ${props => 
+  background: ${props =>
     props.$isAssistant ? '#f5f5f5' : '#1890ff'};
-  color: ${props => 
+  color: ${props =>
     props.$isAssistant ? '#333' : 'white'};
-  align-self: ${props => 
+  align-self: ${props =>
     props.$isAssistant ? 'flex-start' : 'flex-end'};
 `;
 
@@ -57,44 +60,34 @@ const ChatInputArea = styled.div`
   input {
     flex: 1;
     padding: 8px;
-    border: 1px solidrgb(47, 121, 168);
+    border: 1px solid rgb(47, 121, 168);
     border-radius: 4px;
   }
 `;
 
 // ========== 图片识别区域 ==========
-const ImageSection = styled.div`
-  background:rgb(255, 255, 255);
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-`;
+const ImageSection = styled(SectionBase)``;
 
 const PreviewImage = styled.img`
   max-width: 100%;
-  max-height: 10000px;
+  max-height: 200px;
   margin: 16px 0;
   border: 2px dashed #e8e8e8;
 `;
 
 const ResultBox = styled.div`
-  width: 80%;
+  width: 100%;
   padding: 10px;
   background: #fafafa;
   border-radius: 4px;
-  min-height: 0px;
+  min-height: 80px;
   margin-top: 16px;
   word-wrap: break-word;
   white-space: pre-wrap;
 `;
 
 // ========== 天气区域 ==========
-const WeatherSection = styled.div`
-  background:rgb(255, 255, 255);
-  border-radius: 8px;
-  padding: 16px;
-`;
+const WeatherSection = styled(SectionBase)``;
 
 const WeatherInputArea = styled.div`
   display: flex;
@@ -113,10 +106,62 @@ const WeatherCard = styled.div`
 
 const AlertBox = styled.div`
   padding: 12px;
-  background:rgb(233, 239, 128);
-  border: 1px solidrgb(71, 19, 126);
+  background: rgb(233, 239, 128);
+  border: 1px solid rgb(71, 19, 126);
   border-radius: 4px;
   color: #333;
+`;
+
+// ========== 鱼类预测区域 ==========
+const FishSection = styled(SectionBase)``;
+
+const FormGroup = styled.div`
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    color: #333;
+  }
+`;
+
+const PredictionResult = styled.div`
+  background: #f0f8ff;
+  border: 1px solid #1890ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+`;
+
+const PredictionItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border-left: 4px solid #1890ff;
+`;
+
+const ConfidenceBar = styled.div<{ confidence: number }>`
+  width: 100%;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  margin-top: 4px;
+
+  &::after {
+    content: '';
+    display: block;
+    width: ${props => props.confidence}%;
+    height: 100%;
+    background: ${props =>
+      props.confidence > 80 ? '#52c41a' :
+      props.confidence > 60 ? '#faad14' : '#ff4d4f'};
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
 `;
 
 const IntelligentCenter: React.FC = () => {
@@ -138,14 +183,87 @@ const IntelligentCenter: React.FC = () => {
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  // ========== 鱼类预测状态 ==========
+  const [fishSpecies, setFishSpecies] = useState<Array<{
+    name: string;
+    count: number;
+    predictable: boolean;
+  }>>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState('');
+  const [fishHeight, setFishHeight] = useState('');
+  const [fishWidth, setFishWidth] = useState('');
+  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [predicting, setPredicting] = useState(false);
+
   // 自动滚动到底部
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
   useEffect(() => {
-  // 自动触发定位
+    // 自动触发定位
     handleGetLocation();
+    // 加载鱼类品种数据
+    loadFishSpecies();
   }, []);
+
+  // ========== 鱼类预测功能 ==========
+  const loadFishSpecies = async () => {
+    try {
+      const response = await fetch('/api/fish/species');
+      const data = await response.json();
+      if (data.species) {
+        setFishSpecies(data.species);
+      }
+    } catch (error) {
+      message.error('加载鱼类品种失败');
+    }
+  };
+
+  const handleFishPrediction = async () => {
+    if (!selectedSpecies || !fishHeight || !fishWidth) {
+      message.error('请填写完整的预测信息');
+      return;
+    }
+
+    const height = parseFloat(fishHeight);
+    const width = parseFloat(fishWidth);
+
+    if (isNaN(height) || isNaN(width) || height <= 0 || width <= 0) {
+      message.error('请输入有效的数值');
+      return;
+    }
+
+    setPredicting(true);
+    try {
+      const response = await fetch('/api/fish/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          species: selectedSpecies,
+          height: height,
+          width: width
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || '预测失败');
+      }
+
+      setPredictionResult(data);
+      message.success('预测完成！');
+    } catch (error: any) {
+      message.error(error.message || '预测失败');
+      setPredictionResult(null);
+    } finally {
+      setPredicting(false);
+    }
+  };
+
   // ========== 聊天功能处理 ==========
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -161,14 +279,14 @@ const IntelligentCenter: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           type: 'chat',
-          message: inputMessage 
+          message: inputMessage
         })
       });
 
       const data = await response.json();
-      
+
       if (data.type === 'chat') {
         setMessages(prev => [...prev, {
           content: data.reply,
@@ -244,26 +362,7 @@ const IntelligentCenter: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // 通过后端代理获取城市信息
-          // const response = await fetch(`/intelligent`, {
-          //   method: 'POST',
-          //   headers: {
-          //     'Content-Type': 'application/json',
-          //   },
-          //   body: JSON.stringify({
-          //     type: 'location',
-          //     lat: position.coords.latitude,
-          //     lng: position.coords.longitude
-          //   })
-          // });
-          
-          // const data = await response.json();
-          // if (data.type === 'location') {
-          //   setSelectedCity(data.city);
-          //   // 自动触发天气查询
-          //   handleGetWeather(data.city);
-          // }
-          const apiKey = '1ef2b09e54904ea6bf07404436dec7a5 ';
+          const apiKey = '1ef2b09e54904ea6bf07404436dec7a5';
           const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${position.coords.latitude}+${position.coords.longitude}&key=${apiKey}`);
           const data = await response.json();
           const city = data.results[0].components.city;
@@ -291,29 +390,7 @@ const IntelligentCenter: React.FC = () => {
 
     setLoadingWeather(true);
     try {
-      // const response = await fetch('/intelligent', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     type: 'weather',
-      //     city: targetCity
-      //   })
-      // });
-      //   if (!response.ok) {
-      //     throw new Error('获取天气信息失败');
-      //   }
-      //   const data = await response.json();
-      //   if (data.type === 'weather') {
-      //     setWeatherData(data.data);
-      //   }
-      // } catch (error) {
-      //   message.error('获取天气失败');
-      // } finally {
-      //   setLoadingWeather(false);
-      // }
-      const apiKey = '16c686206982413cb7a51625251605 ';
+      const apiKey = '16c686206982413cb7a51625251605';
       const response = await fetch(`http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${targetCity}&aqi=no`);
       if (!response.ok) {
         throw new Error('获取天气信息失败');
@@ -346,10 +423,10 @@ const IntelligentCenter: React.FC = () => {
     <Container>
       {/* 左侧聊天区域 */}
       <ChatSection>
-        <ChatHeader>智能问答小助手</ChatHeader>
+        <SectionHeader>智能问答小助手</SectionHeader>
         <ChatMessages>
           {messages.map((msg, index) => (
-            <MessageBubble 
+            <MessageBubble
               key={index}
               $isAssistant={msg.isAssistant}
             >
@@ -367,7 +444,7 @@ const IntelligentCenter: React.FC = () => {
             placeholder="输入消息..."
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <Button 
+          <Button
             type="primary"
             onClick={handleSendMessage}
           >
@@ -376,8 +453,9 @@ const IntelligentCenter: React.FC = () => {
         </ChatInputArea>
       </ChatSection>
 
-      {/* 中间图像识别区域 */}
+      {/* 图像识别区域 */}
       <ImageSection>
+        <SectionHeader>图像识别</SectionHeader>
         <Upload.Dragger
           accept="image/*"
           beforeUpload={beforeUpload}
@@ -400,12 +478,13 @@ const IntelligentCenter: React.FC = () => {
         </Button>
 
         <ResultBox>
-          {recognitionResult||'识别结果'}
+          {recognitionResult || '识别结果'}
         </ResultBox>
       </ImageSection>
 
-      {/* 右侧天气区域 */}
+      {/* 天气区域 */}
       <WeatherSection>
+        <SectionHeader>天气查询</SectionHeader>
         <WeatherInputArea>
           <Input
             placeholder="输入城市"
@@ -413,14 +492,14 @@ const IntelligentCenter: React.FC = () => {
             onChange={(e) => setSelectedCity(e.target.value)}
             onPressEnter={() => handleGetWeather()}
           />
-          <Button 
+          <Button
             type="primary"
             onClick={() => handleGetWeather()}
             loading={loadingWeather}
           >
             确定
           </Button>
-          <Button 
+          <Button
             type="primary"
             icon={<EnvironmentOutlined />}
             onClick={handleGetLocation}
@@ -445,6 +524,112 @@ const IntelligentCenter: React.FC = () => {
           </>
         )}
       </WeatherSection>
+
+      {/* 鱼类体长预测区域 */}
+      <FishSection>
+        <SectionHeader>
+          <BugOutlined  style={{ marginRight: 8 }} />
+          鱼类体长预测
+        </SectionHeader>
+
+        <FormGroup>
+          <label>选择鱼类品种:</label>
+          <Select
+            placeholder="请选择鱼类品种"
+            value={selectedSpecies}
+            onChange={setSelectedSpecies}
+            style={{ width: '100%' }}
+          >
+            {fishSpecies.map(species => (
+              <Select.Option
+                key={species.name}
+                value={species.name}
+                disabled={!species.predictable}
+              >
+                {species.name} ({species.count}条数据)
+                {!species.predictable && ' - 数据不足'}
+              </Select.Option>
+            ))}
+          </Select>
+        </FormGroup>
+
+        <FormGroup>
+          <label>高度 (cm):</label>
+          <Input
+            type="number"
+            placeholder="请输入鱼的高度"
+            value={fishHeight}
+            onChange={(e) => setFishHeight(e.target.value)}
+            min="0"
+            step="0.1"
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <label>宽度 (cm):</label>
+          <Input
+            type="number"
+            placeholder="请输入鱼的宽度"
+            value={fishWidth}
+            onChange={(e) => setFishWidth(e.target.value)}
+            min="0"
+            step="0.1"
+          />
+        </FormGroup>
+
+        <Button
+          type="primary"
+          icon={<BugOutlined  />}
+          onClick={handleFishPrediction}
+          loading={predicting}
+          disabled={!selectedSpecies || !fishHeight || !fishWidth}
+          style={{ width: '100%', marginBottom: 16 }}
+        >
+          开始预测
+        </Button>
+
+        {predictionResult && (
+          <PredictionResult>
+            <h4>预测结果 - {predictionResult.species}</h4>
+            <p style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+              基于 {predictionResult.sample_size} 条历史数据
+            </p>
+
+            <PredictionItem>
+              <div>
+                <strong>体长1 (鼻端→尾鳍起点)</strong>
+                <div style={{ fontSize: '20px', color: '#1890ff' }}>
+                  {predictionResult.predictions.length1} cm
+                </div>
+                <ConfidenceBar confidence={predictionResult.confidence.length1} />
+                <small>置信度: {predictionResult.confidence.length1}%</small>
+              </div>
+            </PredictionItem>
+
+            <PredictionItem>
+              <div>
+                <strong>体长2 (鼻端→尾鳍缺刻)</strong>
+                <div style={{ fontSize: '20px', color: '#1890ff' }}>
+                  {predictionResult.predictions.length2} cm
+                </div>
+                <ConfidenceBar confidence={predictionResult.confidence.length2} />
+                <small>置信度: {predictionResult.confidence.length2}%</small>
+              </div>
+            </PredictionItem>
+
+            <PredictionItem>
+              <div>
+                <strong>体长3 (鼻端→尾鳍末端)</strong>
+                <div style={{ fontSize: '20px', color: '#1890ff' }}>
+                  {predictionResult.predictions.length3} cm
+                </div>
+                <ConfidenceBar confidence={predictionResult.confidence.length3} />
+                <small>置信度: {predictionResult.confidence.length3}%</small>
+              </div>
+            </PredictionItem>
+          </PredictionResult>
+        )}
+      </FishSection>
     </Container>
   );
 };
