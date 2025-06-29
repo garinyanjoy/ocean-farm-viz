@@ -10,6 +10,9 @@ import os
 import pandas as pd
 from werkzeug.datastructures import FileStorage
 from math import isnan
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 
 app = Flask(__name__)
 CORS(app)
@@ -392,6 +395,111 @@ def get_hydrodata():
             "site_condition": d.site_condition
         })
     return jsonify(result)
+
+
+# 添加鱼类体长预测接口
+@app.route("/api/fish/predict", methods=["POST"])
+def predict_fish_length():
+    """基于鱼类的高度和宽度预测体长"""
+    try:
+        data = request.get_json()
+        species = data.get("species")
+        height = float(data.get("height"))
+        width = float(data.get("width"))
+
+        # 获取该物种的历史数据用于训练模型
+        fish_data = Fish.query.filter_by(species=species).all()
+
+        if len(fish_data) < 3:
+            return jsonify({
+                "error": "该鱼种数据不足，无法进行准确预测",
+                "message": f"需要至少3条{species}的历史数据，当前仅有{len(fish_data)}条"
+            }), 400
+
+        # 准备训练数据
+        X = []  # 特征：高度和宽度
+        y1, y2, y3 = [], [], []  # 目标：三个体长
+
+        for fish in fish_data:
+            X.append([fish.height, fish.width])
+            y1.append(fish.length1)
+            y2.append(fish.length2)
+            y3.append(fish.length3)
+
+        X = np.array(X)
+        y1, y2, y3 = np.array(y1), np.array(y2), np.array(y3)
+
+        # 训练三个独立的线性回归模型
+        models = {}
+        predictions = {}
+
+        for i, (name, y) in enumerate([("length1", y1), ("length2", y2), ("length3", y3)]):
+            model = LinearRegression()
+            model.fit(X, y)
+
+            # 进行预测
+            pred = model.predict([[height, width]])[0]
+            predictions[name] = round(pred, 2)
+
+            # 计算置信度（基于R²分数）
+            score = model.score(X, y)
+            models[name] = {
+                "prediction": round(pred, 2),
+                "confidence": round(score * 100, 1)
+            }
+
+        return jsonify({
+            "species": species,
+            "input": {
+                "height": height,
+                "width": width
+            },
+            "predictions": {
+                "length1": models["length1"]["prediction"],  # 鼻端到尾鳍起点
+                "length2": models["length2"]["prediction"],  # 鼻端到尾鳍缺刻
+                "length3": models["length3"]["prediction"]  # 鼻端到尾鳍末端
+            },
+            "confidence": {
+                "length1": models["length1"]["confidence"],
+                "length2": models["length2"]["confidence"],
+                "length3": models["length3"]["confidence"]
+            },
+            "sample_size": len(fish_data),
+            "message": "预测完成"
+        })
+
+    except ValueError as e:
+        return jsonify({"error": "输入数据格式错误", "message": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": "预测失败", "message": str(e)}), 500
+
+
+# 获取所有鱼类品种列表
+@app.route("/api/fish/species", methods=["GET"])
+def get_fish_species():
+    """获取数据库中所有鱼类品种"""
+    try:
+        species_list = db.session.query(Fish.species).distinct().all()
+        species_names = [species[0] for species in species_list]
+
+        # 获取每个品种的数据量
+        species_info = []
+        for species_name in species_names:
+            count = Fish.query.filter_by(species=species_name).count()
+            species_info.append({
+                "name": species_name,
+                "count": count,
+                "predictable": count >= 3  # 是否有足够数据进行预测
+            })
+
+        return jsonify({
+            "species": species_info,
+            "total_species": len(species_names)
+        })
+
+    except Exception as e:
+        return jsonify({"error": "获取鱼类品种失败", "message": str(e)}), 500
+
 
 if __name__ == "__main__":
     with app.app_context():
