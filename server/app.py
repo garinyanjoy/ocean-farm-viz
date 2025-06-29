@@ -13,6 +13,10 @@ from math import isnan
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+from zhipuai import ZhipuAI
+import re
+from flask import Flask, request, jsonify
+import base64
 
 app = Flask(__name__)
 CORS(app)
@@ -229,7 +233,6 @@ def import_hydrodata_from_csv():
     except Exception as e:
         db.session.rollback()
         print(f"导入水质数据失败: {str(e)}")
-
 
 def import_fish_from_csv():
     """从CSV文件导入鱼类数据"""
@@ -500,6 +503,122 @@ def get_fish_species():
     except Exception as e:
         return jsonify({"error": "获取鱼类品种失败", "message": str(e)}), 500
 
+client = ZhipuAI(api_key="defbe559ed21463b907066351fadd53c.IxkASnky77ZVRhEI") #API KEY
+# Markdown转换为纯文本
+def markdown_to_plaintext(markdown_text):
+    """
+    将Markdown格式文本转换为纯文本段落
+    参数:
+        markdown_text (str): 包含Markdown格式的文本
+    返回:
+        str: 纯文本格式的内容
+    """
+    # 移除代码块 (```code```)
+    text = re.sub(r'```[^`]*```', '', markdown_text, flags=re.DOTALL)
+    # 移除行内代码 (`code`)
+    text = re.sub(r'`([^`]*)`', r'\1', text)
+    # 移除加粗标记 (**bold** 或 __bold__)
+    text = re.sub(r'\*\*([^*]+)\*\*|__([^_]+)__', r'\1\2', text)
+    # 移除斜体标记 (*italic* 或 _italic_)
+    text = re.sub(r'\*([^*]+)\*|_([^_]+)_', r'\1\2', text)
+    # 移除删除线标记 (~~strikethrough~~)
+    text = re.sub(r'~~([^~]+)~~', r'\1', text)
+    # 移除标题标记 (### Heading)
+    text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+    # 移除无序列表标记 (- item 或 * item)
+    text = re.sub(r'^[\s]*[-*+]\s+', '', text, flags=re.MULTILINE)
+    # 移除有序列表标记 (1. item)
+    text = re.sub(r'^[\s]*\d+\.\s+', '', text, flags=re.MULTILINE)
+    # 移除引用标记 (> quote)
+    text = re.sub(r'^>+\s*', '', text, flags=re.MULTILINE)
+    # 移除链接 ([text](url))
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    # 移除图片标记 (![alt](url))
+    text = re.sub(r'!\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    # 移除水平线 (--- 或 ***)
+    text = re.sub(r'^[-*]{3,}\s*$', '', text, flags=re.MULTILINE)
+    # 移除多余的空白和换行
+    text = re.sub(r'\n{3,}', '\n\n', text)  # 多个空行转换为两个空行
+    text = re.sub(r'[ \t]{2,}', ' ', text)  # 多个空格转换为一个空格
+    text = text.strip()  # 移除首尾空白
+    return text
+
+# 智能问答接口
+@app.route('/api/chat', methods=['POST'])
+def handle_chat():
+    data = request.json
+    if data['type'] != 'chat':
+        return jsonify({'error': 'Invalid request type'}), 400
+
+    user_message = data['message']
+
+    try:
+        response = client.chat.completions.create(
+        model="glm-4-plus",  # 模型名称
+        messages=[
+            {"role": "user", "content": "你是一个内置于智慧海洋牧场可视化系统的智能问答小助手可以回答用户的问题特别是关于智慧海洋牧场的相关问题，要求：只需要回答问题，不要有多余的引导，回答只包含中文。"},
+            {"role": "assistant", "content": "当然，请告诉我要咨询的问题"},
+            {"role": "user", "content": user_message},
+    ],
+)
+
+        content = response.choices[0].message.content
+        content = markdown_to_plaintext(content)  # 转换为纯文本
+
+        return jsonify({
+            'type': 'chat',
+            'reply': content,
+        })
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': 'Failed to generate response'}), 500
+
+# 图像识别接口
+@app.route('/api/image', methods=['POST'])
+def handle_image():
+    # 检查前端发送的字段名
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    
+    # 检查空文件
+    if file.filename == '':
+        return jsonify({'error': 'Empty filename'}), 400
+
+    try:
+        # 读取图片数据
+        img_base = base64.b64encode(file.read()).decode('utf-8')
+        # 调用图像识别处理
+        response = client.chat.completions.create(
+            model="glm-4v-plus-0111",  #模型名称
+            messages=[
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                "url": img_base
+                }
+              },
+              {
+                "type": "text",
+                "text": "识别图中物品，要求：只给出答案(最主要的一个物品名称，如果能判断出物品的品种，则给出具体品种，如鲤鱼、鲫鱼、波斯猫、布偶猫等不能的话给出笼统的名称如鱼、猫等），回答只包含中文，除名称外没有其他文字。"
+              }
+            ]
+          }
+        ]
+    )
+        content = response.choices[0].message.content
+        # 返回前端需要的结构
+        return jsonify({
+            'type': 'image',
+            'result': content,
+        })
+
+    except Exception:
+        return jsonify({'error': 'Image processing failed'}), 500
 
 if __name__ == "__main__":
     with app.app_context():

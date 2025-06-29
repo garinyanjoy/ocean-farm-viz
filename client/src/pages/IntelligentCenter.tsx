@@ -76,7 +76,7 @@ const PreviewImage = styled.img`
 `;
 
 const ResultBox = styled.div`
-  width: 100%;
+  width: 95%;
   padding: 10px;
   background: #fafafa;
   border-radius: 4px;
@@ -274,7 +274,7 @@ const IntelligentCenter: React.FC = () => {
     }]);
 
     try {
-      const response = await fetch('/intelligent', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -325,7 +325,7 @@ const IntelligentCenter: React.FC = () => {
       formData.append('type', 'image');
       formData.append('file', dataURLtoFile(previewImage, 'image.jpg'));
 
-      const response = await fetch('/intelligent', {
+      const response = await fetch('/api/image', {
         method: 'POST',
         body: formData
       });
@@ -462,7 +462,7 @@ const IntelligentCenter: React.FC = () => {
           customRequest={({ file }) => handleImageUpload(file as File)}
           showUploadList={false}
         >
-          <p><InboxOutlined style={{ fontSize: 30 }} /></p>
+          <p><InboxOutlined style={{ fontSize: '32px', color: '#1890ff' }} /></p>
           <p>点击或拖拽图片到此区域</p>
         </Upload.Dragger>
 
