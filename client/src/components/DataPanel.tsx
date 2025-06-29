@@ -1,159 +1,147 @@
 import React from 'react';
-import { Grid, Paper, Typography, Box } from '@mui/material';
+import styled from 'styled-components';
+import oceanTheme from '../styles/oceanTheme';
 import {
   Thermostat as ThermostatIcon,
   Opacity as OpacityIcon,
   Science as ScienceIcon,
   WaterDrop as WaterDropIcon,
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+
+// 波浪装饰SVG
+const waveDecoration = `
+<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,0 C150,40 350,0 600,30 C850,60 1050,20 1200,0 L1200,120 L0,120 Z" fill="${oceanTheme.sky}" opacity="0.6"/>
+</svg>
+`;
+
+// 贝壳图标SVG
+const shellIcon = `
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20,80 C0,60 0,40 20,20 C40,0 60,0 80,20 C100,40 100,60 80,80 C60,100 40,100 20,80 Z" fill="${oceanTheme.sand}"/>
+  <path d="M30,70 C20,60 20,40 30,30 C40,20 60,20 70,30 C80,40 80,60 70,70 C60,80 40,80 30,70 Z" fill="${oceanTheme.coral}" opacity="0.7"/>
+</svg>
+`;
+
+const Panel = styled.div`
+  background: ${oceanTheme.panelGradient};
+  border-radius: 16px;
+  box-shadow: ${oceanTheme.cardShadow};
+  padding: 24px;
+  margin: 16px 0;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid ${oceanTheme.border};
+  transition: all ${oceanTheme.transitionNormal};
+  
+  &:hover {
+    box-shadow: 0 12px 48px rgba(0,188,212,0.18);
+    transform: translateY(-4px);
+  }
+`;
+
+const WaveTop = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background-image: url('data:image/svg+xml;utf8,${encodeURIComponent(waveDecoration)}');
+  background-size: cover;
+`;
+
+const PanelHeader = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-top: 8px;
+  border-bottom: 2px solid ${oceanTheme.border};
+  padding-bottom: 12px;
+`;
+
+const PanelTitle = styled.h3`
+  margin: 0;
+  color: ${oceanTheme.deepBlue};
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  
+  &:before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    background-image: url('data:image/svg+xml;utf8,${encodeURIComponent(shellIcon)}');
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+`;
+
+const PanelContent = styled.div`
+  position: relative;
+  z-index: 1;
+`;
+
+const DataGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+`;
+
+const DataCard = styled.div`
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,188,212,0.08);
+  border: 1px solid ${oceanTheme.border};
+  transition: all ${oceanTheme.transitionFast};
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,188,212,0.12);
+  }
+`;
+
+const DataLabel = styled.div`
+  font-size: 0.9rem;
+  color: ${oceanTheme.lightText};
+  margin-bottom: 6px;
+`;
+
+const DataValue = styled.div`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: ${oceanTheme.deepBlue};
+`;
+
+const DataUnit = styled.span`
+  font-size: 0.9rem;
+  color: ${oceanTheme.lightText};
+  margin-left: 4px;
+`;
 
 interface DataPanelProps {
-  data: {
-    temperature: number;
-    oxygen: number;
-    ph: number;
-    salinity: number;
-  };
+  title: string;
+  children?: React.ReactNode;
 }
 
-const DataCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  textAlign: 'center',
-  background: 'rgba(255, 255, 255, 0.8)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: theme.spacing(2),
-  transition: 'all 0.3s ease-in-out',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-    background: 'rgba(255, 255, 255, 0.9)',
-  },
-}));
-
-const IconWrapper = styled('div')(({ theme }) => ({
-  width: 60,
-  height: 60,
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: theme.spacing(2),
-  background: 'linear-gradient(135deg, rgba(2, 136, 209, 0.8), rgba(38, 166, 154, 0.8))',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  transition: 'all 0.3s ease-in-out',
-  '& svg': {
-    fontSize: 30,
-    color: 'white',
-    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-  },
-  '&:hover': {
-    transform: 'scale(1.1) rotate(5deg)',
-  },
-}));
-
-const ValueText = styled(Typography)(({ theme }) => ({
-  fontSize: '2.5rem',
-  fontWeight: 'bold',
-  background: 'linear-gradient(45deg, #0288d1, #26a69a)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  marginBottom: theme.spacing(1),
-  textShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '2rem',
-  },
-}));
-
-const LabelText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.text.secondary,
-  fontSize: '1rem',
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '1px',
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '0.875rem',
-  },
-}));
-
-const DataPanel: React.FC<DataPanelProps> = ({ data }) => {
+const DataPanel: React.FC<DataPanelProps> = ({ title, children }) => {
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography 
-        variant="h5" 
-        sx={{ 
-          mb: 3, 
-          fontWeight: 'bold',
-          color: 'primary.main',
-          textAlign: 'center',
-        }}
-      >
-        环境监测数据
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <DataCard elevation={3}>
-            <IconWrapper>
-              <ThermostatIcon />
-            </IconWrapper>
-            <ValueText variant="h4">
-              {data.temperature}°C
-            </ValueText>
-            <LabelText>
-              水温
-            </LabelText>
-          </DataCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DataCard elevation={3}>
-            <IconWrapper>
-              <OpacityIcon />
-            </IconWrapper>
-            <ValueText variant="h4">
-              {data.oxygen}mg/L
-            </ValueText>
-            <LabelText>
-              溶解氧
-            </LabelText>
-          </DataCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DataCard elevation={3}>
-            <IconWrapper>
-              <ScienceIcon />
-            </IconWrapper>
-            <ValueText variant="h4">
-              {data.ph}
-            </ValueText>
-            <LabelText>
-              pH值
-            </LabelText>
-          </DataCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DataCard elevation={3}>
-            <IconWrapper>
-              <WaterDropIcon />
-            </IconWrapper>
-            <ValueText variant="h4">
-              {data.salinity}‰
-            </ValueText>
-            <LabelText>
-              盐度
-            </LabelText>
-          </DataCard>
-        </Grid>
-      </Grid>
-    </Box>
+    <Panel>
+      <WaveTop />
+      <PanelHeader>
+        <PanelTitle>{title}</PanelTitle>
+      </PanelHeader>
+      <PanelContent>
+        {children}
+      </PanelContent>
+    </Panel>
   );
 };
 
-export default DataPanel; 
+// 导出主组件和子组件
+export default DataPanel;
+export { DataGrid, DataCard, DataLabel, DataValue, DataUnit }; 

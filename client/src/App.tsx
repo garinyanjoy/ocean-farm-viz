@@ -16,51 +16,36 @@ import Home from "./pages/Home";
 import IntelligentCenter from "./pages/IntelligentCenter";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthContext";
+import { ThemeProvider } from 'styled-components';
+import oceanTheme from './styles/oceanTheme';
+import OceanBackground from './components/OceanBackground';
+import AuthLayout from './auth/AuthLayout';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <Header />
-        <Container maxWidth={false} sx={{ mt: 4 }}>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/main-info" element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            } />
-            <Route path="/underwater" element={
-              <PrivateRoute>
-                <UnderWaterSystem />
-              </PrivateRoute>
-            } />
-            <Route path="/data-center" element={
-              <PrivateRoute>
-                <DataCenter />
-              </PrivateRoute>
-            } />
-            <Route path="/admin" element={
-              <PrivateRoute>
-                <AdminManagement />
-              </PrivateRoute>
-            } />
-            <Route path="/intelligent" element={
-              <PrivateRoute>
-                <IntelligentCenter />
-              </PrivateRoute>
-            } />
-            <Route path="/profile" element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </Container>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider theme={oceanTheme}>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <OceanBackground />
+            <Header />
+            <main>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+                <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                <Route path="/data-center" element={<DataCenter />} />
+                <Route path="/intelligent-center" element={<IntelligentCenter />} />
+                <Route path="/underwater" element={<UnderWaterSystem />} />
+                <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                <Route path="/admin" element={<PrivateRoute admin={true}><AdminManagement /></PrivateRoute>} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

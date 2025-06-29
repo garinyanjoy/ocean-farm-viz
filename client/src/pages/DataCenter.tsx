@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { oceanTheme } from '../styles/oceanTheme';
+import ShanghaiWaterMap from '../components/ShanghaiWaterMap';
 
 interface FishData {
   id?: number;
@@ -32,7 +33,7 @@ interface HydroData {
 }
 
 const DataCenter: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'fish' | 'water'>('fish');
+  const [activeTab, setActiveTab] = useState<'fish' | 'water' | 'map'>('map');
   const [fishData, setFishData] = useState<FishData[]>([]);
   const [hydroData, setHydroData] = useState<HydroData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -318,8 +319,8 @@ const DataCenter: React.FC = () => {
           <ModalBody>
             {fields.map((field) => (
               <FormGroup key={field.key}>
-                <label>{field.label}:</label>
-                <Input
+                <FormLabel>{field.label}:</FormLabel>
+                <FormInput
                   type={field.type}
                   value={newData[field.key] || ''}
                   onChange={(e) =>
@@ -331,7 +332,7 @@ const DataCenter: React.FC = () => {
           </ModalBody>
           <ModalFooter>
             <CancelBtn onClick={() => setShowAddModal(false)}>取消</CancelBtn>
-            <ConfirmBtn onClick={handleAdd}>确认添加</ConfirmBtn>
+            <ModalButton onClick={handleAdd}>确认添加</ModalButton>
           </ModalFooter>
         </ModalContent>
       </ModalOverlay>
@@ -340,184 +341,159 @@ const DataCenter: React.FC = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>数据中心</Title>
-        <TabContainer>
-          <Tab
-            active={activeTab === 'fish'}
-            onClick={() => setActiveTab('fish')}
-          >
-            鱼类数据
-          </Tab>
-          <Tab
-            active={activeTab === 'water'}
-            onClick={() => setActiveTab('water')}
-          >
-            水质数据
-          </Tab>
-        </TabContainer>
-      </Header>
-
-      <ToolBar>
-        <ButtonGroup>
-          <ActionBtn onClick={() => setShowAddModal(true)}>
-            📝 添加数据
-          </ActionBtn>
-          <ActionBtn onClick={handleExport}>
-            📤 导出数据
-          </ActionBtn>
-          <UploadLabel>
-            📂 上传数据
-            <HiddenInput
-              type="file"
-              accept=".csv"
-              onChange={handleUpload}
-            />
-          </UploadLabel>
-        </ButtonGroup>
-        <DataCount>
-          总计: {activeTab === 'fish' ? fishData.length : hydroData.length} 条数据
-        </DataCount>
-      </ToolBar>
-
-      <Content>
-        {loading ? (
-          <LoadingContainer>
-            <LoadingSpinner />
-            <p>数据加载中...</p>
-          </LoadingContainer>
-        ) : (
-          <>
-            {activeTab === 'fish' ? renderFishTable() : renderWaterTable()}
-          </>
-        )}
-      </Content>
-
-      {renderAddModal()}
+      <Header>数据中心</Header>
+      <TabContainer>
+        <Tab 
+          active={activeTab === 'map'} 
+          onClick={() => setActiveTab('map')}
+        >
+          上海水质地图
+        </Tab>
+        <Tab 
+          active={activeTab === 'fish'} 
+          onClick={() => setActiveTab('fish')}
+        >
+          鱼类数据
+        </Tab>
+        <Tab 
+          active={activeTab === 'water'} 
+          onClick={() => setActiveTab('water')}
+        >
+          水质数据
+        </Tab>
+      </TabContainer>
+      
+      {activeTab === 'map' && (
+        <MapContainer>
+          <ShanghaiWaterMap hydroData={hydroData.filter(data => data.location === '上海')} />
+        </MapContainer>
+      )}
+      
+      {activeTab === 'fish' && (
+        <Content>
+          <ToolBar>
+            <Button onClick={() => setShowAddModal(true)}>添加数据</Button>
+            <Button onClick={handleExport}>导出数据</Button>
+            <UploadButton>
+              上传CSV
+              <input type="file" accept=".csv" onChange={handleUpload} />
+            </UploadButton>
+          </ToolBar>
+          {loading ? <LoadingText>加载中...</LoadingText> : renderFishTable()}
+        </Content>
+      )}
+      
+      {activeTab === 'water' && (
+        <Content>
+          <ToolBar>
+            <Button onClick={() => setShowAddModal(true)}>添加数据</Button>
+            <Button onClick={handleExport}>导出数据</Button>
+            <UploadButton>
+              上传CSV
+              <input type="file" accept=".csv" onChange={handleUpload} />
+            </UploadButton>
+          </ToolBar>
+          {loading ? <LoadingText>加载中...</LoadingText> : renderWaterTable()}
+        </Content>
+      )}
+      
+      {showAddModal && renderAddModal()}
     </Container>
   );
 };
 
 // Styled components
 const Container = styled.div`
-  min-height: 100vh;
-  background: linear-gradient(135deg, ${oceanTheme.palette.primary.main} 0%, ${oceanTheme.palette.secondary.main} 100%);
   padding: 20px;
+  max-width: 100%;
+  overflow-x: auto;
 `;
 
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-`;
-
-const Title = styled.h1`
-  color: white;
-  font-size: 2.5rem;
-  margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+const Header = styled.h1`
+  color: ${oceanTheme.deepBlue};
+  margin-bottom: 20px;
+  text-align: center;
 `;
 
 const TabContainer = styled.div`
   display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 25px;
-  padding: 5px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
 `;
 
-const Tab = styled.button<{ active: boolean }>`
-  padding: 12px 30px;
-  border: none;
-  border-radius: 20px;
-  background: ${props => props.active ? 'rgba(255, 255, 255, 0.9)' : 'transparent'};
-  color: ${props => props.active ? oceanTheme.palette.primary.main : 'white'};
-  font-weight: 600;
+const Tab = styled.div<{ active: boolean }>`
+  padding: 10px 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 0 5px;
-
+  color: ${props => props.active ? oceanTheme.primary : '#666'};
+  border-bottom: ${props => props.active ? `2px solid ${oceanTheme.primary}` : 'none'};
+  font-weight: ${props => props.active ? 'bold' : 'normal'};
+  transition: all 0.3s;
+  
   &:hover {
-    background: ${props => props.active ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.2)'};
+    background-color: #f5f5f5;
   }
+`;
+
+const MapContainer = styled.div`
+  margin-top: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const Content = styled.div`
+  margin-top: 20px;
 `;
 
 const ToolBar = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 10px;
   margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
-  padding: 15px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 15px;
-`;
-
-const ActionBtn = styled.button`
-  padding: 12px 20px;
-  border: none;
-  border-radius: 25px;
-  background: linear-gradient(45deg, ${oceanTheme.palette.secondary.light}, ${oceanTheme.palette.secondary.main});
+const Button = styled.button`
+  padding: 8px 16px;
+  background-color: ${oceanTheme.primary};
   color: white;
-  font-weight: 600;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-
+  
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background-color: ${oceanTheme.deepBlue};
   }
 `;
 
-const UploadLabel = styled.label`
-  padding: 12px 20px;
-  border: none;
-  border-radius: 25px;
-  background: linear-gradient(45deg, ${oceanTheme.palette.primary.light}, ${oceanTheme.palette.secondary.light});
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+const UploadButton = styled.label`
   display: inline-block;
-
+  padding: 8px 16px;
+  background-color: ${oceanTheme.secondary};
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  position: relative;
+  
+  input[type='file'] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+  
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background-color: ${oceanTheme.deepBlue};
   }
 `;
 
-const HiddenInput = styled.input`
-  display: none;
-`;
-
-const DataCount = styled.div`
-  color: white;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 10px 20px;
-  border-radius: 20px;
-`;
-
-const Content = styled.div`
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
+const LoadingText = styled.div`
+  text-align: center;
+  color: #666;
   padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
 const TableContainer = styled.div`
@@ -533,11 +509,11 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-  background: linear-gradient(45deg, ${oceanTheme.palette.primary.main}, ${oceanTheme.palette.secondary.main});
+  background: linear-gradient(45deg, ${oceanTheme.primary}, ${oceanTheme.secondary});
   color: white;
   padding: 15px 10px;
   text-align: left;
-  font-weight: 600;
+  font-weight: 500;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -556,43 +532,19 @@ const Td = styled.td`
 `;
 
 const DeleteBtn = styled.button`
-  background: linear-gradient(45deg, #ff6b6b, #ff5252);
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: ${oceanTheme.coral};
   color: white;
   border: none;
-  padding: 6px 12px;
-  border-radius: 15px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-
+  transition: background-color 0.3s;
+  font-size: 14px;
+  margin-left: 10px;
+  
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 3px 10px rgba(255, 107, 107, 0.4);
-  }
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px;
-  color: ${oceanTheme.palette.primary.main};
-`;
-
-const LoadingSpinner = styled.div`
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e1e8ed;
-  border-top: 4px solid ${oceanTheme.palette.primary.main};
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    background-color: #d32f2f;
   }
 `;
 
@@ -622,16 +574,13 @@ const ModalContent = styled.div`
 `;
 
 const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 20px 30px;
   border-bottom: 1px solid #e1e8ed;
-  background: linear-gradient(45deg, ${oceanTheme.palette.primary.main}, ${oceanTheme.palette.secondary.main});
+  background: linear-gradient(45deg, ${oceanTheme.primary}, ${oceanTheme.secondary});
   color: white;
   border-radius: 20px 20px 0 0;
 
-  h3 {
+  h2 {
     margin: 0;
     font-size: 1.5rem;
   }
@@ -665,26 +614,24 @@ const ModalBody = styled.div`
 
 const FormGroup = styled.div`
   margin-bottom: 20px;
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: ${oceanTheme.palette.primary.main};
-  }
 `;
 
-const Input = styled.input`
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e1e8ed;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: border-color 0.3s ease;
+const FormLabel = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: ${oceanTheme.deepBlue};
+`;
 
+const FormInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  
   &:focus {
     outline: none;
-    border-color: ${oceanTheme.palette.primary.main};
+    border-color: ${oceanTheme.primary};
     box-shadow: 0 0 0 3px rgba(0, 123, 191, 0.1);
   }
 `;
@@ -715,19 +662,34 @@ const CancelBtn = styled.button`
   }
 `;
 
-const ConfirmBtn = styled.button`
+const ModalButton = styled.button`
+  font-size: 16px;
+  font-weight: 500;
   padding: 12px 25px;
   border: none;
-  background: linear-gradient(45deg, ${oceanTheme.palette.primary.main}, ${oceanTheme.palette.secondary.main});
+  background: linear-gradient(45deg, ${oceanTheme.primary}, ${oceanTheme.secondary});
   color: white;
   border-radius: 25px;
   cursor: pointer;
-  font-weight: 600;
   transition: all 0.3s ease;
-
+  
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 123, 191, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+`;
+
+const SelectField = styled.select`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  
+  &:focus {
+    outline: none;
+    border-color: ${oceanTheme.primary};
+    box-shadow: 0 0 0 3px rgba(0, 123, 191, 0.1);
   }
 `;
 
