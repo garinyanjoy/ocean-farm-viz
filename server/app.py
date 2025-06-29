@@ -620,6 +620,208 @@ def handle_image():
     except Exception:
         return jsonify({'error': 'Image processing failed'}), 500
 
+# === 数据管理API接口 ===
+
+# 添加鱼类数据
+@app.route("/api/fish", methods=["POST"])
+def add_fish():
+    try:
+        data = request.get_json()
+        new_fish = Fish(
+            species=data["species"],
+            weight=float(data["weight"]),
+            length1=float(data["length1"]),
+            length2=float(data["length2"]),
+            length3=float(data["length3"]),
+            height=float(data["height"]),
+            width=float(data["width"])
+        )
+        db.session.add(new_fish)
+        db.session.commit()
+        return jsonify({"message": "鱼类数据添加成功", "id": new_fish.id}), 201
+    except Exception as e:
+        return jsonify({"error": "添加失败", "message": str(e)}), 400
+
+# 删除鱼类数据
+@app.route("/api/fish/<int:fish_id>", methods=["DELETE"])
+def delete_fish(fish_id):
+    try:
+        fish = Fish.query.get(fish_id)
+        if not fish:
+            return jsonify({"error": "数据不存在"}), 404
+        db.session.delete(fish)
+        db.session.commit()
+        return jsonify({"message": "鱼类数据删除成功"})
+    except Exception as e:
+        return jsonify({"error": "删除失败", "message": str(e)}), 400
+
+# 添加水质数据
+@app.route("/api/hydrodata", methods=["POST"])
+def add_hydrodata():
+    try:
+        data = request.get_json()
+        date_obj = datetime.strptime(data["date"], "%Y-%m-%d").date()
+        new_hydro = HydroData(
+            location=data["location"],
+            basin=data["basin"],
+            section_name=data["section_name"],
+            date=date_obj,
+            water_temperature=float(data.get("water_temperature", 0)),
+            pH=float(data.get("pH", 7)),
+            dissolved_oxygen=float(data.get("dissolved_oxygen", 0)),
+            conductivity=float(data.get("conductivity", 0)),
+            turbidity=float(data.get("turbidity", 0)),
+            permanganate_index=float(data.get("permanganate_index", 0)),
+            ammonia_nitrogen=float(data.get("ammonia_nitrogen", 0)),
+            total_phosphorus=float(data.get("total_phosphorus", 0)),
+            total_nitrogen=float(data.get("total_nitrogen", 0)),
+            site_condition=data.get("site_condition", "")
+        )
+        db.session.add(new_hydro)
+        db.session.commit()
+        return jsonify({"message": "水质数据添加成功", "id": new_hydro.id}), 201
+    except Exception as e:
+        return jsonify({"error": "添加失败", "message": str(e)}), 400
+
+# 删除水质数据
+@app.route("/api/hydrodata/<int:hydro_id>", methods=["DELETE"])
+def delete_hydrodata(hydro_id):
+    try:
+        hydro = HydroData.query.get(hydro_id)
+        if not hydro:
+            return jsonify({"error": "数据不存在"}), 404
+        db.session.delete(hydro)
+        db.session.commit()
+        return jsonify({"message": "水质数据删除成功"})
+    except Exception as e:
+        return jsonify({"error": "删除失败", "message": str(e)}), 400
+
+# 导出鱼类数据为CSV
+@app.route("/api/fish/export", methods=["GET"])
+def export_fish():
+    try:
+        fish_list = Fish.query.all()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # 写入表头
+        writer.writerow(['Species', 'Weight(g)', 'Length1(cm)', 'Length2(cm)', 'Length3(cm)', 'Height(cm)', 'Width(cm)'])
+        
+        # 写入数据
+        for fish in fish_list:
+            writer.writerow([fish.species, fish.weight, fish.length1, fish.length2, fish.length3, fish.height, fish.width])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': 'attachment; filename=fish_data.csv'
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": "导出失败", "message": str(e)}), 500
+
+# 导出水质数据为CSV
+@app.route("/api/hydrodata/export", methods=["GET"])
+def export_hydrodata():
+    try:
+        hydro_list = HydroData.query.all()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # 写入表头
+        writer.writerow(['Location', 'Basin', 'Section_Name', 'Date', 'Water_Temperature', 'pH', 
+                        'Dissolved_Oxygen', 'Conductivity', 'Turbidity', 'Permanganate_Index',
+                        'Ammonia_Nitrogen', 'Total_Phosphorus', 'Total_Nitrogen', 'Site_Condition'])
+        
+        # 写入数据
+        for hydro in hydro_list:
+            writer.writerow([
+                hydro.location, hydro.basin, hydro.section_name, hydro.date.strftime("%Y-%m-%d"),
+                hydro.water_temperature, hydro.pH, hydro.dissolved_oxygen, hydro.conductivity,
+                hydro.turbidity, hydro.permanganate_index, hydro.ammonia_nitrogen,
+                hydro.total_phosphorus, hydro.total_nitrogen, hydro.site_condition
+            ])
+        
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': 'attachment; filename=water_quality_data.csv'
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": "导出失败", "message": str(e)}), 500
+
+# 上传CSV数据
+@app.route("/api/upload/<string:data_type>", methods=["POST"])
+def upload_csv(data_type):
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "没有上传文件"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "文件名为空"}), 400
+        
+        if not file.filename.endswith('.csv'):
+            return jsonify({"error": "只支持CSV文件"}), 400
+        
+        # 读取CSV文件
+        content = file.read().decode('utf-8')
+        csv_reader = csv.DictReader(io.StringIO(content))
+        
+        imported_count = 0
+        
+        if data_type == "fish":
+            for row in csv_reader:
+                fish = Fish(
+                    species=row['Species'],
+                    weight=float(row['Weight(g)']),
+                    length1=float(row['Length1(cm)']),
+                    length2=float(row['Length2(cm)']),
+                    length3=float(row['Length3(cm)']),
+                    height=float(row['Height(cm)']),
+                    width=float(row['Width(cm)'])
+                )
+                db.session.add(fish)
+                imported_count += 1
+                
+        elif data_type == "hydrodata":
+            for row in csv_reader:
+                date_obj = datetime.strptime(row['Date'], '%Y-%m-%d').date()
+                hydro = HydroData(
+                    location=row['Location'],
+                    basin=row['Basin'],
+                    section_name=row['Section_Name'],
+                    date=date_obj,
+                    water_temperature=float(row.get('Water_Temperature', 0)),
+                    pH=float(row.get('pH', 7)),
+                    dissolved_oxygen=float(row.get('Dissolved_Oxygen', 0)),
+                    conductivity=float(row.get('Conductivity', 0)),
+                    turbidity=float(row.get('Turbidity', 0)),
+                    permanganate_index=float(row.get('Permanganate_Index', 0)),
+                    ammonia_nitrogen=float(row.get('Ammonia_Nitrogen', 0)),
+                    total_phosphorus=float(row.get('Total_Phosphorus', 0)),
+                    total_nitrogen=float(row.get('Total_Nitrogen', 0)),
+                    site_condition=row.get('Site_Condition', '')
+                )
+                db.session.add(hydro)
+                imported_count += 1
+        else:
+            return jsonify({"error": "不支持的数据类型"}), 400
+        
+        db.session.commit()
+        return jsonify({"message": f"成功导入 {imported_count} 条数据"}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "上传失败", "message": str(e)}), 500
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

@@ -13,4 +13,6 @@ dependencies = [
     "pandas>=2.2.3",
     "pymysql>=1.1.1",
     "requests>=2.32.3",
+    "scikit-learn>=1.7.0",
+    "zhipuai>=2.1.5.20250626",
 ]
