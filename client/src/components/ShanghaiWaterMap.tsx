@@ -376,11 +376,10 @@ const ShanghaiWaterMap: React.FC<ShanghaiWaterMapProps> = ({ onStationSelect, hy
         marker.openPopup();
       });
 
-      marker.on('mouseover', (e) => {
+      marker.on('mouseover', (e: L.LeafletMouseEvent) => {
         if (!showHistoricalData) {
           if (tooltipTimeoutRef.current) {
             clearTimeout(tooltipTimeoutRef.current);
-            tooltipTimeoutRef.current = null;
           }
 
           const pos = e.originalEvent;

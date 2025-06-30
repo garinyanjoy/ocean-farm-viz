@@ -9,12 +9,12 @@ interface PrivateRouteProps {
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, admin = false }) => {
   const { user, isAdmin, isInitialized } = useAuth();
-  
+
   // 等待认证状态初始化
   if (!isInitialized) {
     return <div>Loading...</div>;
   }
-  
+
   // 如果用户未登录，重定向到登录页
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -24,7 +24,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, admin = false }) 
   if (admin && !isAdmin) {
     return <Navigate to="/" replace />;
   }
-  
+
   // 用户已登录，渲染子组件
   return <>{children}</>;
 };

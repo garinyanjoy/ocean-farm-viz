@@ -311,7 +311,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onControlChange, onVideoCha
                     <IconButton component="a" href={selectedVideo.url} download><GetApp/></IconButton>
                   </Stack>
                   <Typography variant="caption" color="textSecondary">{selectedVideo.name} - {selectedVideo.date}</Typography>
-                </Box>
+          </Box>
               ) : (
                 <Typography variant="body2">请选择左侧视频以播放</Typography>
               )}

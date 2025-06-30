@@ -111,7 +111,7 @@ const SearchInput = styled.input`
   
   &::placeholder {
     color: ${oceanTheme.lightText};
-  }
+    }
 `;
 
 interface ToolBarProps {

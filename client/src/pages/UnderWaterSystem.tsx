@@ -434,10 +434,10 @@ const UnderWaterSystem: React.FC = () => {
               </Typography>
               <FormControl size="small" sx={{ ml: 2, minWidth: 120, background: 'rgba(33,150,243,0.10)', borderRadius: 1 }}>
                 {/* 不要 InputLabel */}
-                                  <Select
-                    value={selectedSpecies}
-                    onChange={e => setSelectedSpecies(e.target.value)}
-                    displayEmpty
+                <Select
+                  value={selectedSpecies}
+                  onChange={e => setSelectedSpecies(e.target.value)}
+                  displayEmpty
                     sx={selectStyles}
                     renderValue={val => val ? val : <span style={renderValueStyle}>请选择鱼种</span>}
                 >

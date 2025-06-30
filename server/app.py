@@ -13,7 +13,7 @@ from math import isnan
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
-from zhipuai import ZhipuAI
+# from zhipuai import ZhipuAI
 import re
 from flask import Flask, request, jsonify
 import base64
@@ -21,15 +21,9 @@ import base64
 app = Flask(__name__)
 CORS(app)
 
-# Read database connection details from environment variables
-db_user = os.getenv('DB_USER', 'root')
-db_password = os.getenv('DB_PASSWORD', 'lbr200424')
-db_host = os.getenv('DB_HOST', '127.0.0.1')
-db_port = os.getenv('DB_PORT', '3306')
-db_name = os.getenv('DB_NAME', 'ocean-monitor')
-
-app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-print("连接数据库：", db_user, db_password, db_host, db_port, db_name)
+# 使用SQLite作为数据库
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ocean-monitor.db"
+print("使用SQLite数据库")
 db.init_app(app)
 
 # 登录接口
@@ -503,7 +497,6 @@ def get_fish_species():
     except Exception as e:
         return jsonify({"error": "获取鱼类品种失败", "message": str(e)}), 500
 
-client = ZhipuAI(api_key="defbe559ed21463b907066351fadd53c.IxkASnky77ZVRhEI") #API KEY
 # Markdown转换为纯文本
 def markdown_to_plaintext(markdown_text):
     """
@@ -553,17 +546,21 @@ def handle_chat():
     user_message = data['message']
 
     try:
-        response = client.chat.completions.create(
-        model="glm-4-plus",  # 模型名称
-        messages=[
-            {"role": "user", "content": "你是一个内置于智慧海洋牧场可视化系统的智能问答小助手可以回答用户的问题特别是关于智慧海洋牧场的相关问题，要求：只需要回答问题，不要有多余的引导，回答只包含中文。"},
-            {"role": "assistant", "content": "当然，请告诉我要咨询的问题"},
-            {"role": "user", "content": user_message},
-    ],
-)
+        # 注释掉调用智谱AI的代码
+        # response = client.chat.completions.create(
+        # model="glm-4-plus",  # 模型名称
+        # messages=[
+        #     {"role": "user", "content": "你是一个内置于智慧海洋牧场可视化系统的智能问答小助手可以回答用户的问题特别是关于智慧海洋牧场的相关问题，要求：只需要回答问题，不要有多余的引导，回答只包含中文。"},
+        #     {"role": "assistant", "content": "当然，请告诉我要咨询的问题"},
+        #     {"role": "user", "content": user_message},
+        # ],
+        # )
 
-        content = response.choices[0].message.content
-        content = markdown_to_plaintext(content)  # 转换为纯文本
+        # content = response.choices[0].message.content
+        # content = markdown_to_plaintext(content)  # 转换为纯文本
+        
+        # 返回一个固定的回复
+        content = "智能问答功能暂时不可用，请稍后再试。"
 
         return jsonify({
             'type': 'chat',
@@ -589,28 +586,32 @@ def handle_image():
     try:
         # 读取图片数据
         img_base = base64.b64encode(file.read()).decode('utf-8')
-        # 调用图像识别处理
-        response = client.chat.completions.create(
-            model="glm-4v-plus-0111",  #模型名称
-            messages=[
-          {
-            "role": "user",
-            "content": [
-              {
-                "type": "image_url",
-                "image_url": {
-                "url": img_base
-                }
-              },
-              {
-                "type": "text",
-                "text": "识别图中物品，要求：只给出答案(最主要的一个物品名称，如果能判断出物品的品种，则给出具体品种，如鲤鱼、鲫鱼、波斯猫、布偶猫等不能的话给出笼统的名称如鱼、猫等），回答只包含中文，除名称外没有其他文字。"
-              }
-            ]
-          }
-        ]
-    )
-        content = response.choices[0].message.content
+        # 注释掉调用智谱AI的代码
+        # response = client.chat.completions.create(
+        #     model="glm-4v-plus-0111",  #模型名称
+        #     messages=[
+        #   {
+        #     "role": "user",
+        #     "content": [
+        #       {
+        #         "type": "image_url",
+        #         "image_url": {
+        #         "url": img_base
+        #         }
+        #       },
+        #       {
+        #         "type": "text",
+        #         "text": "识别图中物品，要求：只给出答案(最主要的一个物品名称，如果能判断出物品的品种，则给出具体品种，如鲤鱼、鲫鱼、波斯猫、布偶猫等不能的话给出笼统的名称如鱼、猫等），回答只包含中文，除名称外没有其他文字。"
+        #       }
+        #     ]
+        #   }
+        # ]
+        # )
+        # content = response.choices[0].message.content
+        
+        # 返回一个固定的回复
+        content = "图像识别功能暂时不可用，请稍后再试。"
+        
         # 返回前端需要的结构
         return jsonify({
             'type': 'image',

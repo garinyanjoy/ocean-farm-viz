@@ -209,7 +209,7 @@ const LogoutButton = styled.button`
   display: flex;
   align-items: center;
   gap: 6px;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
@@ -234,7 +234,7 @@ const AdminButton = styled(Link)`
   align-items: center;
   gap: 6px;
   text-decoration: none;
-  
+
   &:hover {
     background: ${oceanTheme.sand};
     transform: translateY(-2px);
@@ -271,10 +271,10 @@ const Header: React.FC = () => {
     
     updateTime();
     const interval = setInterval(updateTime, 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   const isActive = (path: string) => {
     return location.pathname === path;
   };
@@ -307,11 +307,11 @@ const Header: React.FC = () => {
           <NavLink to="/intelligent-center" active={isActive('/intelligent-center')}>智能分析</NavLink>
           <NavLink to="/underwater" active={isActive('/underwater')}>水下系统</NavLink>
         </Nav>
-        <RightSection>
-          <TimeDisplay>{currentTime}</TimeDisplay>
-          
-          {user ? (
-            <>
+      <RightSection>
+        <TimeDisplay>{currentTime}</TimeDisplay>
+        
+        {user ? (
+          <>
               <UserInfo>
                 <UserAvatar>
                   {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
@@ -319,14 +319,14 @@ const Header: React.FC = () => {
                 <span>{user.username}</span>
               </UserInfo>
               
-              {isAdmin && (
+            {isAdmin && (
                 <AdminButton to="/admin">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                   </svg>
-                  用户管理
-                </AdminButton>
-              )}
+                用户管理
+              </AdminButton>
+            )}
               
               <LogoutButton onClick={handleLogout}>
                 <svg viewBox="0 0 24 24" fill="currentColor">
@@ -334,14 +334,14 @@ const Header: React.FC = () => {
                 </svg>
                 退出
               </LogoutButton>
-            </>
-          ) : (
-            <>
+          </>
+        ) : (
+          <>
               <NavLink to="/login">登录</NavLink>
               <NavLink to="/register">注册</NavLink>
-            </>
-          )}
-        </RightSection>
+          </>
+        )}
+      </RightSection>
       </HeaderContent>
     </HeaderContainer>
   );

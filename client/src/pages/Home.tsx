@@ -323,18 +323,18 @@ const Home: React.FC = () => {
                 <Stack direction="row" spacing={2}>
                   {isLiveStream ? (
                     <>
-                      <Chip 
-                        icon={<FiberManualRecordIcon sx={{ color: '#f44336!important' }} />} 
-                        label={loading ? "数据加载中..." : "实时监控"} 
-                        color="error" 
-                        size="small"
-                        sx={{ '& .MuiChip-label': { fontWeight: 'bold' } }}
-                      />
-                      <Chip 
-                        label={currentTime.toLocaleTimeString()} 
-                        variant="outlined" 
-                        size="small" 
-                      />
+                  <Chip 
+                    icon={<FiberManualRecordIcon sx={{ color: '#f44336!important' }} />} 
+                    label={loading ? "数据加载中..." : "实时监控"} 
+                    color="error" 
+                    size="small"
+                    sx={{ '& .MuiChip-label': { fontWeight: 'bold' } }}
+                  />
+                  <Chip 
+                    label={currentTime.toLocaleTimeString()} 
+                    variant="outlined" 
+                    size="small" 
+                  />
                     </>
                   ) : (
                     <Button
@@ -354,8 +354,8 @@ const Home: React.FC = () => {
               )}
               
               {/* 视频播放器 */}
-              <Box
-                sx={{
+                <Box 
+                  sx={{ 
                   position: 'relative',
                   width: '100%',
                   paddingTop: '56.25%', // 16:9 宽高比
@@ -372,7 +372,7 @@ const Home: React.FC = () => {
                   muted={isLiveStream}
                   loop={isLiveStream}
                   style={{
-                    position: 'absolute',
+                    position: 'absolute', 
                     top: 0,
                     left: 0,
                     width: '100%',

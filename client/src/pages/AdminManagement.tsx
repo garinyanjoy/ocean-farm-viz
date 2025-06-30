@@ -399,26 +399,26 @@ const AdminManagement: React.FC = () => {
         minHeight: 'calc(100vh - 64px)',
         background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
       }}>
-        <OceanBackground />
+      <OceanBackground />
         
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Typography variant="h4" sx={{ mb: 4, color: oceanTheme.deepBlue, fontWeight: 700 }}>
             系统管理中心
-          </Typography>
+        </Typography>
           
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={3}>
-              <Paper sx={{ 
-                p: 2, 
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ 
+              p: 2,
                 background: 'rgba(255, 255, 255, 0.9)',
                 borderRadius: 2,
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-              }}>
+            }}>
                 <Typography variant="h6" sx={{ mb: 2, color: oceanTheme.deepBlue }}>
                   管理菜单
                 </Typography>
                 <List component="nav">
-                  <ListItemButton 
+                  <ListItemButton
                     selected={selectedSection === 'users'}
                     onClick={() => setSelectedSection('users')}
                     sx={{ 
@@ -438,7 +438,7 @@ const AdminManagement: React.FC = () => {
                     <ListItemText primary="用户管理" />
                   </ListItemButton>
                   
-                  <ListItemButton 
+                  <ListItemButton
                     selected={selectedSection === 'monitoring'}
                     onClick={() => setSelectedSection('monitoring')}
                     sx={{ 
@@ -458,7 +458,7 @@ const AdminManagement: React.FC = () => {
                     <ListItemText primary="监控管理" />
                   </ListItemButton>
                   
-                  <ListItemButton 
+                  <ListItemButton
                     selected={selectedSection === 'statistics'}
                     onClick={() => setSelectedSection('statistics')}
                     sx={{ 
@@ -478,7 +478,7 @@ const AdminManagement: React.FC = () => {
                     <ListItemText primary="统计分析" />
                   </ListItemButton>
                   
-                  <ListItemButton 
+                  <ListItemButton
                     selected={selectedSection === 'system'}
                     onClick={() => setSelectedSection('system')}
                     sx={{ 
@@ -497,25 +497,25 @@ const AdminManagement: React.FC = () => {
                     </ListItemIcon>
                     <ListItemText primary="系统设置" />
                   </ListItemButton>
-                </List>
-              </Paper>
-            </Grid>
+              </List>
+            </Paper>
+          </Grid>
             
-            <Grid item xs={12} md={9}>
-              <Paper sx={{ 
-                p: 3, 
+          <Grid item xs={12} md={9}>
+            <Paper sx={{ 
+              p: 3,
                 background: 'rgba(255, 255, 255, 0.9)',
                 borderRadius: 2,
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
                 minHeight: '70vh'
-              }}>
-                {selectedSection === 'users' && renderUserManagement()}
-                {selectedSection === 'monitoring' && renderApiEndpoints('monitoring')}
-                {selectedSection === 'statistics' && renderApiEndpoints('statistics')}
-                {selectedSection === 'system' && renderApiEndpoints('system')}
-              </Paper>
-            </Grid>
+            }}>
+              {selectedSection === 'users' && renderUserManagement()}
+              {selectedSection === 'monitoring' && renderApiEndpoints('monitoring')}
+              {selectedSection === 'statistics' && renderApiEndpoints('statistics')}
+              {selectedSection === 'system' && renderApiEndpoints('system')}
+            </Paper>
           </Grid>
+        </Grid>
         </Box>
         
         {/* 用户表单对话框 */}

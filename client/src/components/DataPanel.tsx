@@ -143,5 +143,5 @@ const DataPanel: React.FC<DataPanelProps> = ({ title, children }) => {
 };
 
 // 导出主组件和子组件
-export default DataPanel;
+export default DataPanel; 
 export { DataGrid, DataCard, DataLabel, DataValue, DataUnit }; 

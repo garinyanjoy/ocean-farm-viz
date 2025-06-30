@@ -342,26 +342,26 @@ const DataCenter: React.FC = () => {
   return (
     <Container>
       <Header>数据中心</Header>
-      <TabContainer>
+        <TabContainer>
         <Tab 
           active={activeTab === 'map'} 
           onClick={() => setActiveTab('map')}
         >
           上海水质地图
         </Tab>
-        <Tab 
-          active={activeTab === 'fish'} 
-          onClick={() => setActiveTab('fish')}
-        >
-          鱼类数据
-        </Tab>
-        <Tab 
-          active={activeTab === 'water'} 
-          onClick={() => setActiveTab('water')}
-        >
-          水质数据
-        </Tab>
-      </TabContainer>
+          <Tab
+            active={activeTab === 'fish'}
+            onClick={() => setActiveTab('fish')}
+          >
+            鱼类数据
+          </Tab>
+          <Tab
+            active={activeTab === 'water'}
+            onClick={() => setActiveTab('water')}
+          >
+            水质数据
+          </Tab>
+        </TabContainer>
       
       {activeTab === 'map' && (
         <MapContainer>
@@ -371,20 +371,20 @@ const DataCenter: React.FC = () => {
       
       {activeTab === 'fish' && (
         <Content>
-          <ToolBar>
+      <ToolBar>
             <Button onClick={() => setShowAddModal(true)}>添加数据</Button>
             <Button onClick={handleExport}>导出数据</Button>
             <UploadButton>
               上传CSV
               <input type="file" accept=".csv" onChange={handleUpload} />
             </UploadButton>
-          </ToolBar>
+      </ToolBar>
           {loading ? <LoadingText>加载中...</LoadingText> : renderFishTable()}
         </Content>
       )}
-      
+
       {activeTab === 'water' && (
-        <Content>
+      <Content>
           <ToolBar>
             <Button onClick={() => setShowAddModal(true)}>添加数据</Button>
             <Button onClick={handleExport}>导出数据</Button>
@@ -394,7 +394,7 @@ const DataCenter: React.FC = () => {
             </UploadButton>
           </ToolBar>
           {loading ? <LoadingText>加载中...</LoadingText> : renderWaterTable()}
-        </Content>
+      </Content>
       )}
       
       {showAddModal && renderAddModal()}
@@ -428,7 +428,7 @@ const Tab = styled.div<{ active: boolean }>`
   border-bottom: ${props => props.active ? `2px solid ${oceanTheme.primary}` : 'none'};
   font-weight: ${props => props.active ? 'bold' : 'normal'};
   transition: all 0.3s;
-  
+
   &:hover {
     background-color: #f5f5f5;
   }
@@ -458,7 +458,7 @@ const Button = styled.button`
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background-color: ${oceanTheme.deepBlue};
   }
@@ -484,7 +484,7 @@ const UploadButton = styled.label`
     height: 100%;
     cursor: pointer;
   }
-  
+
   &:hover {
     background-color: ${oceanTheme.deepBlue};
   }
@@ -542,7 +542,7 @@ const DeleteBtn = styled.button`
   transition: background-color 0.3s;
   font-size: 14px;
   margin-left: 10px;
-  
+
   &:hover {
     background-color: #d32f2f;
   }
@@ -617,9 +617,9 @@ const FormGroup = styled.div`
 `;
 
 const FormLabel = styled.label`
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
   color: ${oceanTheme.deepBlue};
 `;
 
@@ -628,7 +628,7 @@ const FormInput = styled.input`
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  
+
   &:focus {
     outline: none;
     border-color: ${oceanTheme.primary};
@@ -672,7 +672,7 @@ const ModalButton = styled.button`
   border-radius: 25px;
   cursor: pointer;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

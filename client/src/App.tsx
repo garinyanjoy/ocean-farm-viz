@@ -24,13 +24,13 @@ import AuthLayout from './auth/AuthLayout';
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={oceanTheme}>
-      <AuthProvider>
-        <Router>
+    <AuthProvider>
+      <Router>
           <div className="App">
             <OceanBackground />
-            <Header />
+        <Header />
             <main>
-              <Routes>
+          <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
                 <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
@@ -40,11 +40,11 @@ const App: React.FC = () => {
                 <Route path="/underwater" element={<UnderWaterSystem />} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 <Route path="/admin" element={<PrivateRoute admin={true}><AdminManagement /></PrivateRoute>} />
-              </Routes>
+          </Routes>
             </main>
           </div>
-        </Router>
-      </AuthProvider>
+      </Router>
+    </AuthProvider>
     </ThemeProvider>
   );
 };
