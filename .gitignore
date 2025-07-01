@@ -5,15 +5,13 @@ __pycache__/
 *.so
 .Python
 venv/
-myenv/
-myenv_new/
 ENV/
 
 # Node
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # IDE
 .idea/
@@ -34,14 +32,54 @@ Thumbs.db
 *.log
 
 # 数据库文件
-*.sqlite3
-*.db
+# 注意：开发数据库文件应该被包含在版本控制中
+# *.sqlite3
+# *.db
 
-# 其他
+# 构建输出
 dist/
 build/
+
+# 测试覆盖率
 .coverage
 htmlcov/
+coverage/
+
+# Flask
+instance/
+.webassets-cache
+
+# 临时文件
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# 虚拟环境
+.env
+.venv
+env/
+venv/
+ENV/
+
+# 缓存
+.cache
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# 不忽略
+!create_db.sql
+!requirements.txt
+!package.json
+!package-lock.json
+!tsconfig.json
+!pyproject.toml
+!uv.lock
 
 # C extensions
 data
@@ -94,10 +132,6 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
-instance/
-.webassets-cache
-
 # Scrapy stuff:
 .scrapy
 
@@ -126,12 +160,6 @@ ipython_config.py
 #   having no cross-platform support, pipenv may install dependencies that don't work, or not
 #   install all needed dependencies.
 #Pipfile.lock
-
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
