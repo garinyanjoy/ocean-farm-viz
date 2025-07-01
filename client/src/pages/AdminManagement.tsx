@@ -42,7 +42,7 @@ import {
   VideoLibrary as VideoLibraryIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
-import { oceanTheme } from '../styles/oceanTheme';
+import { oceanTheme, muiTheme } from '../styles/oceanTheme';
 import OceanBackground from '../components/OceanBackground';
 import { styled } from '@mui/material/styles';
 
@@ -391,72 +391,123 @@ const AdminManagement: React.FC = () => {
   };
 
   return (
-    <ThemeProvider theme={oceanTheme}>
+    <ThemeProvider theme={muiTheme}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        padding: 3,
+        position: 'relative',
+        minHeight: 'calc(100vh - 64px)',
+        background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
+      }}>
       <OceanBackground />
-      <Box sx={{ p: 3, position: 'relative' }}>
-        <Typography variant="h4" gutterBottom>
-          管理员控制台
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Typography variant="h4" sx={{ mb: 4, color: oceanTheme.deepBlue, fontWeight: 700 }}>
+            系统管理中心
         </Typography>
+          
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
             <Paper sx={{ 
               p: 2,
-              background: 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
             }}>
-              <List>
-                <ListItem disablePadding>
+                <Typography variant="h6" sx={{ mb: 2, color: oceanTheme.deepBlue }}>
+                  管理菜单
+                </Typography>
+                <List component="nav">
                   <ListItemButton
                     selected={selectedSection === 'users'}
                     onClick={() => setSelectedSection('users')}
+                    sx={{ 
+                      borderRadius: 1,
+                      mb: 1,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        }
+                      }
+                    }}
                   >
                     <ListItemIcon>
-                      <PersonIcon />
+                      <PersonIcon color={selectedSection === 'users' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="用户管理" />
                   </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
+                  
                   <ListItemButton
                     selected={selectedSection === 'monitoring'}
                     onClick={() => setSelectedSection('monitoring')}
+                    sx={{ 
+                      borderRadius: 1,
+                      mb: 1,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        }
+                      }
+                    }}
                   >
                     <ListItemIcon>
-                      <VisibilityIcon />
+                      <VisibilityIcon color={selectedSection === 'monitoring' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="监控管理" />
                   </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
+                  
                   <ListItemButton
                     selected={selectedSection === 'statistics'}
                     onClick={() => setSelectedSection('statistics')}
+                    sx={{ 
+                      borderRadius: 1,
+                      mb: 1,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        }
+                      }
+                    }}
                   >
                     <ListItemIcon>
-                      <AssessmentIcon />
+                      <AssessmentIcon color={selectedSection === 'statistics' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="数据统计" />
+                    <ListItemText primary="统计分析" />
                   </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
+                  
                   <ListItemButton
                     selected={selectedSection === 'system'}
                     onClick={() => setSelectedSection('system')}
+                    sx={{ 
+                      borderRadius: 1,
+                      mb: 1,
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        }
+                      }
+                    }}
                   >
                     <ListItemIcon>
-                      <SettingsIcon />
+                      <SettingsIcon color={selectedSection === 'system' ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="系统管理" />
+                    <ListItemText primary="系统设置" />
                   </ListItemButton>
-                </ListItem>
               </List>
             </Paper>
           </Grid>
+            
           <Grid item xs={12} md={9}>
             <Paper sx={{ 
               p: 3,
-              background: 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                minHeight: '70vh'
             }}>
               {selectedSection === 'users' && renderUserManagement()}
               {selectedSection === 'monitoring' && renderApiEndpoints('monitoring')}
@@ -465,6 +516,54 @@ const AdminManagement: React.FC = () => {
             </Paper>
           </Grid>
         </Grid>
+        </Box>
+        
+        {/* 用户表单对话框 */}
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="xs" fullWidth>
+          <DialogTitle>{editUser ? '编辑用户' : '创建新用户'}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="用户名"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              sx={{ mb: 2, mt: 1 }}
+            />
+            <TextField
+              margin="dense"
+              label="密码"
+              type="password"
+              fullWidth
+              variant="outlined"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              sx={{ mb: 2 }}
+              placeholder={editUser ? '留空表示不修改密码' : ''}
+            />
+            <TextField
+              select
+              margin="dense"
+              label="角色"
+              fullWidth
+              variant="outlined"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            >
+              <MenuItem value="user">普通用户</MenuItem>
+              <MenuItem value="admin">管理员</MenuItem>
+            </TextField>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)}>取消</Button>
+            <Button onClick={editUser ? handleUpdateUser : handleCreateUser} variant="contained">
+              {editUser ? '保存' : '创建'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </ThemeProvider>
   );

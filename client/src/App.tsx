@@ -1,7 +1,7 @@
 // @ts-ignore
 import React from "react";
 // @ts-ignore
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 // @ts-ignore
 import { Container } from "@mui/material";
 import Header from "./pages/Header";
@@ -16,51 +16,37 @@ import Home from "./pages/Home";
 import IntelligentCenter from "./pages/IntelligentCenter";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthContext";
+import { ThemeProvider } from 'styled-components';
+import oceanTheme from './styles/oceanTheme';
+import OceanBackground from './components/OceanBackground';
+import AuthLayout from './auth/AuthLayout';
 
 const App: React.FC = () => {
   return (
+    <ThemeProvider theme={oceanTheme}>
     <AuthProvider>
       <Router>
-        <Header />
-        <Container maxWidth={false} sx={{ mt: 4 }}>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/main-info" element={
-              <PrivateRoute>
-                <Home />
-              </PrivateRoute>
-            } />
-            <Route path="/underwater" element={
-              <PrivateRoute>
-                <UnderWaterSystem />
-              </PrivateRoute>
-            } />
-            <Route path="/data-center" element={
-              <PrivateRoute>
-                <DataCenter />
-              </PrivateRoute>
-            } />
-            <Route path="/admin" element={
-              <PrivateRoute>
-                <AdminManagement />
-              </PrivateRoute>
-            } />
-            <Route path="/intelligent" element={
-              <PrivateRoute>
-                <IntelligentCenter />
-              </PrivateRoute>
-            } />
-            <Route path="/profile" element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </Container>
+          <div className="App">
+            <OceanBackground />
+            <Header />
+            <main>
+              <Routes>
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+                <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+                <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                <Route path="/data-center" element={<PrivateRoute><DataCenter /></PrivateRoute>} />
+                <Route path="/intelligent-center" element={<PrivateRoute><IntelligentCenter /></PrivateRoute>} />
+                <Route path="/underwater" element={<PrivateRoute><UnderWaterSystem /></PrivateRoute>} />
+                <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                <Route path="/admin" element={<PrivateRoute admin={true}><AdminManagement /></PrivateRoute>} />
+              </Routes>
+            </main>
+          </div>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 

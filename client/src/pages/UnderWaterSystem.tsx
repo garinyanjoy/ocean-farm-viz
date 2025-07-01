@@ -51,7 +51,7 @@ type Fish = {
   width: number;
 };
 
-// ...其他import...
+// ...other import...
 type HydroData = {
   id: number;
   location: string;
@@ -135,14 +135,15 @@ function getScoreByStandard(metric: string, value: number | null | undefined): n
 
 
 const SectionCard = styled(Card)(({ theme }) => ({
-  background: "rgba(255,255,255,0.13)",
+  background: "rgba(0,30,60,0.85)",
   borderRadius: '1.5rem',
   boxShadow: '0 8px 32px 0 rgba(2, 119, 189, 0.25)',
-  color: '#fff',
+  color: '#e3f2fd',
   border: '2px solid',
   borderImage: 'linear-gradient(135deg, #4fc3f7 0%, #01579b 100%) 1',
   backdropFilter: 'blur(8px)',
   height: '100%',
+  minHeight: '420px', // 添加最小高度使卡片呈现上下略长的矩形
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
@@ -156,6 +157,25 @@ const SectionCard = styled(Card)(({ theme }) => ({
 
 const ChartBox = styled(Box)({ height: 250, width: '100%' });
 const COLORS = ['#0288d1', '#03a9f4', '#b3e5fc', '#81d4fa'];
+
+// 全局样式定义
+const selectStyles = {
+  color: '#e3f2fd',
+  '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7', borderWidth: '2px' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
+  '.MuiSvgIcon-root': { color: '#4fc3f7' },
+  backgroundColor: 'rgba(0,30,60,0.5)',
+  '&:hover': {
+    backgroundColor: 'rgba(0,30,60,0.7)',
+  }
+};
+
+// 下拉菜单提示文字样式
+const renderValueStyle = { 
+  color: '#e3f2fd', 
+  textShadow: '0 0 2px rgba(0,0,0,0.7)',
+  fontWeight: 500
+};
 
 const UnderWaterSystem: React.FC = () => {
   const [hydroList, setHydroList] = useState<HydroData[]>([]);
@@ -382,8 +402,16 @@ const UnderWaterSystem: React.FC = () => {
           }} />
         ))}
       </div>
-      <Grid container spacing={2} sx={{ flex: 1, height: "100%", margin: 0 }}>
-        {/* 第一行：左-中-右 */}
+      <Grid 
+        container 
+        spacing={3} 
+        sx={{ 
+          p: 3,  // 添加内边距
+          mx: 'auto', // 水平居中
+          maxWidth: '98%', // 两边留出空隙
+          width: '100%',
+        }}
+      >
         <Grid item xs={12} md={4}>
           <SectionCard>
             <CardContent>
@@ -410,13 +438,8 @@ const UnderWaterSystem: React.FC = () => {
                   value={selectedSpecies}
                   onChange={e => setSelectedSpecies(e.target.value)}
                   displayEmpty
-                  sx={{
-                    color: '#e3f2fd',
-                    '.MuiOutlinedInput-notchedOutline': { borderColor: '#4fc3f7' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0288d1' },
-                    '.MuiSvgIcon-root': { color: '#4fc3f7' }
-                  }}
-                  renderValue={val => val ? val : <span style={{ color: '#b3e5fc' }}>请选择鱼种</span>}
+                    sx={selectStyles}
+                    renderValue={val => val ? val : <span style={renderValueStyle}>请选择鱼种</span>}
                 >
                   <MenuItem value="">
                     <em>请选择鱼种</em>
@@ -499,16 +522,16 @@ const UnderWaterSystem: React.FC = () => {
                       return (
                         <>
                           <Box sx={{ textAlign: 'center' }}>
-                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>均值</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{avg}</Typography>
+                            <Typography sx={{ color: '#81d4fa', fontWeight: 600, fontSize: 15 }}>均值</Typography>
+                            <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.5)' }}>{avg}</Typography>
                           </Box>
                           <Box sx={{ textAlign: 'center' }}>
-                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最小值</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{min}</Typography>
+                            <Typography sx={{ color: '#81d4fa', fontWeight: 600, fontSize: 15 }}>最小值</Typography>
+                            <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.5)' }}>{min}</Typography>
                           </Box>
                           <Box sx={{ textAlign: 'center' }}>
-                            <Typography sx={{ color: '#4fc3f7', fontWeight: 600, fontSize: 15 }}>最大值</Typography>
-                            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{max}</Typography>
+                            <Typography sx={{ color: '#81d4fa', fontWeight: 600, fontSize: 15 }}>最大值</Typography>
+                            <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.5)' }}>{max}</Typography>
                           </Box>
                         </>
                       );
@@ -516,7 +539,7 @@ const UnderWaterSystem: React.FC = () => {
                   </Box>
                 </>
               ) : (
-                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                <Box sx={{ color: '#e3f2fd', textAlign: 'center', py: 6, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.7)' }}>
                   请选择鱼种后查看分布与统计
                 </Box>
               )}
@@ -817,7 +840,6 @@ const UnderWaterSystem: React.FC = () => {
             </CardContent>
           </SectionCard>
         </Grid>
-        {/* 第二行：左-中-右 */}
         <Grid item xs={12} md={4}>
           <SectionCard>
             <CardContent>
@@ -971,7 +993,7 @@ const UnderWaterSystem: React.FC = () => {
                   </Box>
                   {/* 指标文字展示 */}
                   <Box sx={{ mt: 2 }}>
-                    <Typography sx={{ color: '#b3e5fc', fontWeight: 500, fontSize: 15, mb: 1 }}>
+                    <Typography sx={{ color: '#e3f2fd', fontWeight: 600, fontSize: 15, mb: 1, textShadow: '0 0 2px rgba(0,0,0,0.7)' }}>
                       当前各项指标：
                     </Typography>
                     <Grid container spacing={1}>
@@ -986,8 +1008,8 @@ const UnderWaterSystem: React.FC = () => {
                             py: 0.5,
                             mb: 0.5,
                           }}>
-                            <span style={{ color: '#4fc3f7', fontWeight: 600, marginRight: 6 }}>{item.label}：</span>
-                            <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
+                            <span style={{ color: '#81d4fa', fontWeight: 600, marginRight: 6, textShadow: '0 0 2px rgba(0,0,0,0.5)' }}>{item.label}：</span>
+                            <span style={{ color: '#ffffff', fontWeight: 700, textShadow: '0 0 2px rgba(0,0,0,0.7)' }}>{item.value}</span>
                           </Box>
                         </Grid>
                       ))}
@@ -996,7 +1018,7 @@ const UnderWaterSystem: React.FC = () => {
                   {/* 其它指标展示... */}
                 </>
               ) : (
-                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                <Box sx={{ color: '#e3f2fd', textAlign: 'center', py: 6, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.7)' }}>
                   请选择省份、流域、断面名称和日期后查看水质数据
                 </Box>
               )}
@@ -1398,7 +1420,7 @@ const UnderWaterSystem: React.FC = () => {
                   </Box>
                 </>
               ) : (
-                <Box sx={{ color: '#b3e5fc', textAlign: 'center', py: 6, fontSize: 18 }}>
+                <Box sx={{ color: '#e3f2fd', textAlign: 'center', py: 6, fontSize: 18, textShadow: '0 0 2px rgba(0,0,0,0.7)' }}>
                   请选择省份、流域、断面名称后查看环境评分变化
                 </Box>
               )}

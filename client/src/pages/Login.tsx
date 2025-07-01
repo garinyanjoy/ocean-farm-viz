@@ -28,7 +28,7 @@ const Login: React.FC = () => {
         login(response.data.username, response.data.role);
         
         // 根据角色跳转
-        const targetPath = response.data.role === 'admin' ? '/admin' : '/main-info';
+        const targetPath = response.data.role === 'admin' ? '/admin' : '/home';
         console.log('登录成功，跳转到:', targetPath);
         navigate(targetPath);
       }

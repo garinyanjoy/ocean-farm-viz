@@ -33,6 +33,9 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
+import ControlPanel from '../components/ControlPanel';
+import { useAuth } from '../auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // 配置axios默认设置
 axios.defaults.withCredentials = false;
@@ -94,11 +97,52 @@ interface MonitoringData {
   }>;
 }
 
+interface WaterQualityData {
+  temp: number;      // °C
+  ph: number;        // pH
+  sal: number;       // 盐度 ‰
+  do: number;        // 溶解氧 mg/L
+  turbidity: number; // 浊度 NTU
+  nh3: number;       // 氨氮 mg/L
+  no3: number;       // 硝酸盐 mg/L
+}
+
+// 简易随机函数
+const randomFloat = (min: number, max: number, decimals = 1) => {
+  return Number((Math.random() * (max - min) + min).toFixed(decimals));
+};
+
+const genRandomQuality = (): WaterQualityData => ({
+  temp: randomFloat(20, 28, 1),
+  ph: randomFloat(7.5, 8.5, 2),
+  sal: randomFloat(30, 35, 1),
+  do: randomFloat(6, 9, 1),
+  turbidity: randomFloat(0, 5, 1),
+  nh3: randomFloat(0, 0.5, 2),
+  no3: randomFloat(0, 10, 1),
+});
+
+// 默认实时监控视频URL
+const DEFAULT_LIVE_VIDEO = '/data/fish_test.webm';
+
+// 视频映射配置
+const VIDEO_MAPPINGS: Record<string, number> = {
+  light: 5,      // 照明系统对应视频5
+  cleaner: 2,    // 清洁系统对应视频2
+  feeding: 4,    // 投喂系统对应视频4
+  waterCirculation: 3, // 水循环系统对应视频3
+  temperature: 1, // 温控系统对应视频1
+};
+
 const Home: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [monitoringData, setMonitoringData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentVideo, setCurrentVideo] = useState(DEFAULT_LIVE_VIDEO);
+  const [isLiveStream, setIsLiveStream] = useState(true);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [controls, setControls] = useState({
     light: false,
@@ -108,6 +152,7 @@ const Home: React.FC = () => {
     temperature: false,
   });
   const [lightIntensity, setLightIntensity] = useState(50);
+  const [waterQuality, setWaterQuality] = useState<WaterQualityData>(genRandomQuality());
   
   // 实时时钟更新
   useEffect(() => {
@@ -117,11 +162,39 @@ const Home: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleControlChange = (control: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setControls(prev => ({ ...prev, [control]: event.target.checked }));
+  // 定时刷新水质数据
+  useEffect(() => {
+    const t = setInterval(()=> setWaterQuality(genRandomQuality()), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  // 处理未登录用户的操作
+  const handleUnauthorizedAction = () => {
+    navigate('/login');
+  };
+
+  const handleControlChange = (control: string, value: boolean | number) => {
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
+    
+    if (typeof value === 'boolean') {
+      setControls(prev => ({ ...prev, [control]: value }));
+      if (!value) {
+        setCurrentVideo(DEFAULT_LIVE_VIDEO);
+        setIsLiveStream(true);
+      }
+    } else if (control === 'lightIntensity') {
+      setLightIntensity(value);
+    }
   };
 
   const handleLightIntensityChange = (_event: Event, newValue: number | number[]) => {
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
     setLightIntensity(Array.isArray(newValue) ? newValue[0] : newValue);
   };
   
@@ -176,6 +249,36 @@ const Home: React.FC = () => {
     return () => clearInterval(dataRefreshTimer);
   }, []);
 
+  // 确保组件加载时使用默认视频
+  useEffect(() => {
+    setCurrentVideo(DEFAULT_LIVE_VIDEO);
+  }, []);
+
+  const handleVideoChange = (videoUrl: string) => {
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
+    console.log("切换视频到:", videoUrl);
+    setCurrentVideo(videoUrl);
+    setIsLiveStream(!videoUrl.includes('6.mp4') && !videoUrl.includes('7.mp4'));
+  };
+
+  const handleReturnToLive = () => {
+    // 找到最后一个打开的控制开关对应的视频，如果没有则播放默认视频
+    const activeControls = Object.entries(controls).filter(([_, value]) => value);
+    if (activeControls.length > 0) {
+      const lastControl = activeControls[activeControls.length - 1][0];
+      const videoUrl = `/data/${VIDEO_MAPPINGS[lastControl]}.mp4`;
+      console.log("返回到活动控制视频:", videoUrl); // 添加日志帮助调试
+      setCurrentVideo(videoUrl);
+    } else {
+      console.log("返回到默认视频:", DEFAULT_LIVE_VIDEO); // 添加日志帮助调试
+      setCurrentVideo(DEFAULT_LIVE_VIDEO);
+    }
+    setIsLiveStream(true);
+  };
+
   return (
     <Box sx={{ 
       minHeight: '100vh',
@@ -196,6 +299,13 @@ const Home: React.FC = () => {
         智慧海洋牧场可视化系统
       </Typography>
       
+      {/* 添加登录提示 */}
+      {!isAuthenticated && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          请登录以使用完整功能
+        </Alert>
+      )}
+      
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
         <Button 
           variant="contained" 
@@ -205,6 +315,7 @@ const Home: React.FC = () => {
             background: 'linear-gradient(45deg, #1e88e5, #00acc1)',
             boxShadow: '0 4px 12px rgba(0,150,255,0.2)',
           }}
+          disabled={!isAuthenticated}
         >
           测试API连接
         </Button>
@@ -219,6 +330,7 @@ const Home: React.FC = () => {
               backgroundColor: 'rgba(0,150,255,0.1)',
             },
           }}
+          disabled={!isAuthenticated}
         >
           刷新监控数据
         </Button>
@@ -232,9 +344,14 @@ const Home: React.FC = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h5" component="div" sx={{ display: 'flex', alignItems: 'center', color: '#01579b' }}>
                   <VideocamIcon sx={{ mr: 1 }} /> 
-                  {monitoringData ? `海洋监控摄像头 #${monitoringData.camera_id}` : '海洋监控摄像头'}
+                  {isLiveStream ? 
+                    (monitoringData ? `海洋监控摄像头 #${monitoringData.camera_id}` : '海洋监控摄像头') :
+                    '历史视频回放'
+                  }
                 </Typography>
                 <Stack direction="row" spacing={2}>
+                  {isLiveStream ? (
+                    <>
                   <Chip 
                     icon={<FiberManualRecordIcon sx={{ color: '#f44336!important' }} />} 
                     label={loading ? "数据加载中..." : "实时监控"} 
@@ -247,6 +364,18 @@ const Home: React.FC = () => {
                     variant="outlined" 
                     size="small" 
                   />
+                    </>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleReturnToLive}
+                      startIcon={<VideocamIcon />}
+                      disabled={!isAuthenticated}
+                    >
+                      返回实时监控
+                    </Button>
+                  )}
                 </Stack>
               </Box>
               
@@ -254,147 +383,52 @@ const Home: React.FC = () => {
                 <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
               )}
               
-              <Card sx={{ bgcolor: '#000', position: 'relative' }}>
-                <CardMedia
-                  component="video"
-                  controls
-                  src="/data/fish_test.webm"
-                  sx={{ width: '100%', maxHeight: '500px' }}
+              {/* 视频播放器 */}
+                <Box 
+                  sx={{ 
+                  position: 'relative',
+                  width: '100%',
+                  paddingTop: '56.25%', // 16:9 宽高比
+                  bgcolor: 'black',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                <video
+                  key={currentVideo}
+                  src={currentVideo}
+                  controls={!isLiveStream}
+                  autoPlay
+                  muted={isLiveStream}
+                  loop={isLiveStream}
+                  style={{
+                    position: 'absolute', 
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
                 />
-                <Box 
-                  sx={{ 
-                    position: 'absolute', 
-                    top: 10, 
-                    left: 10, 
-                    color: 'white', 
-                    bgcolor: 'rgba(0,0,0,0.5)', 
-                    px: 1,
-                    borderRadius: 1,
-                    fontSize: '0.8rem',
-                    fontFamily: 'monospace'
-                  }}
-                >
-                  {monitoringData ? 
-                    `水深: ${monitoringData.environment.depth}m | 温度: ${monitoringData.environment.water_temperature}°C | 可见度: ${monitoringData.environment.visibility} | 溶氧: ${monitoringData.environment.dissolved_oxygen}mg/L | pH: ${monitoringData.environment.pH}`
-                    : 
-                    '数据加载中...'
-                  }
+                {/* 左上角水质 */}
+                <Box sx={{position:'absolute', top:8, left:8, bgcolor:'rgba(0,0,0,0.4)', color:'#fff', px:1.2, py:0.6, borderRadius:1, fontSize:'0.9rem', lineHeight:1.3}}>
+                  T: {waterQuality.temp}°C | pH: {waterQuality.ph} | Sal: {waterQuality.sal}‰
                 </Box>
-                <Box 
-                  sx={{ 
-                    position: 'absolute', 
-                    bottom: 50, 
-                    right: 10, 
-                    color: 'white', 
-                    bgcolor: 'rgba(0,0,0,0.5)', 
-                    px: 1,
-                    borderRadius: 1,
-                    fontSize: '0.8rem',
-                    fontFamily: 'monospace'
-                  }}
-                >
-                  {monitoringData ? monitoringData.timestamp : currentTime.toLocaleString()}
+                {/* 右下角水质 */}
+                <Box sx={{position:'absolute', bottom:8, right:8, bgcolor:'rgba(0,0,0,0.4)', color:'#fff', px:1.2, py:0.6, borderRadius:1, fontSize:'0.9rem', lineHeight:1.3}}>
+                  DO: {waterQuality.do}mg/L | NTU: {waterQuality.turbidity} | NH₃: {waterQuality.nh3}mg/L | NO₃: {waterQuality.no3}mg/L
                 </Box>
-              </Card>
+              </Box>
             </Box>
           </OceanPaper>
         </Grid>
 
         {/* 控制面板区域 */}
         <Grid item xs={12} md={4}>
-          <OceanPaper elevation={3} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ color: '#01579b', display: 'flex', alignItems: 'center' }}>
-              <WbSunny sx={{ mr: 1 }} />
-              设施控制面板
-            </Typography>
-            
-            <Grid container spacing={2}>
-              {/* 照明控制 */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <LightbulbOutlined sx={{ mr: 1, color: '#ffa000' }} />
-                  <Typography sx={{ flex: 1 }}>照明系统</Typography>
-                  <Switch
-                    checked={controls.light}
-                    onChange={handleControlChange('light')}
-                    color="primary"
-                  />
-                </Box>
-                {controls.light && (
-                  <Slider
-                    value={lightIntensity}
-                    onChange={handleLightIntensityChange}
-                    aria-labelledby="light-intensity-slider"
-                    valueLabelDisplay="auto"
-                    sx={{ ml: 4 }}
-                  />
-                )}
-              </Grid>
-
-              {/* 清洁系统 */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CleaningServices sx={{ mr: 1, color: '#00acc1' }} />
-                  <Typography sx={{ flex: 1 }}>清洁系统</Typography>
-                  <Switch
-                    checked={controls.cleaner}
-                    onChange={handleControlChange('cleaner')}
-                    color="primary"
-                  />
-                </Box>
-              </Grid>
-
-              {/* 投喂系统 */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <LocalDining sx={{ mr: 1, color: '#43a047' }} />
-                  <Typography sx={{ flex: 1 }}>自动投喂</Typography>
-                  <Switch
-                    checked={controls.feeding}
-                    onChange={handleControlChange('feeding')}
-                    color="primary"
-                  />
-                </Box>
-              </Grid>
-
-              {/* 水循环系统 */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Waves sx={{ mr: 1, color: '#0288d1' }} />
-                  <Typography sx={{ flex: 1 }}>水循环系统</Typography>
-                  <Switch
-                    checked={controls.waterCirculation}
-                    onChange={handleControlChange('waterCirculation')}
-                    color="primary"
-                  />
-                </Box>
-              </Grid>
-
-              {/* 温控系统 */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <AcUnit sx={{ mr: 1, color: '#00bcd4' }} />
-                  <Typography sx={{ flex: 1 }}>温控系统</Typography>
-                  <Switch
-                    checked={controls.temperature}
-                    onChange={handleControlChange('temperature')}
-                    color="primary"
-                  />
-                </Box>
-              </Grid>
-
-              {/* 视频回放按钮 */}
-              <Grid item xs={12}>
-                <ControlButton
-                  fullWidth
-                  startIcon={<PlayCircleOutline />}
-                  onClick={() => setVideoDialogOpen(true)}
-                >
-                  历史视频回放
-                </ControlButton>
-              </Grid>
-            </Grid>
-          </OceanPaper>
+          <ControlPanel 
+            onControlChange={handleControlChange} 
+            onVideoChange={handleVideoChange}
+          />
         </Grid>
 
         {/* 数据分析区域 */}

@@ -34,8 +34,8 @@ Thumbs.db
 *.log
 
 # 数据库文件
-*.sqlite3
-*.db
+# *.sqlite3
+# *.db
 
 # 其他
 dist/
@@ -44,7 +44,8 @@ build/
 htmlcov/
 
 # C extensions
-data
+# 允许上传必要的数据文件
+# data
 build/
 develop-eggs/
 downloads/
@@ -95,7 +96,8 @@ db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
-instance/
+# 允许上传实例文件夹，其中可能包含必要的配置
+# instance/
 .webassets-cache
 
 # Scrapy stuff:
