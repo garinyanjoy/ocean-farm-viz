@@ -34,8 +34,8 @@ Thumbs.db
 *.log
 
 # 数据库文件
-# *.sqlite3
-# *.db
+*.sqlite3
+*.db
 
 # 其他
 dist/
@@ -44,8 +44,10 @@ build/
 htmlcov/
 
 # C extensions
-# 允许上传必要的数据文件
-# data
+# 默认不忽略 data 目录，使必要的 CSV 等文件可以提交
+# 如果有大型或临时数据，请在子目录中单独添加忽略规则，例如 data/raw/
+# 例如：
+# data/raw/
 build/
 develop-eggs/
 downloads/
@@ -96,8 +98,7 @@ db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
-# 允许上传实例文件夹，其中可能包含必要的配置
-# instance/
+instance/
 .webassets-cache
 
 # Scrapy stuff:
