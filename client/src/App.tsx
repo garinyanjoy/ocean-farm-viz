@@ -1,7 +1,7 @@
 // @ts-ignore
 import React from "react";
 // @ts-ignore
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 // @ts-ignore
 import { Container } from "@mui/material";
 import Header from "./pages/Header";
@@ -28,19 +28,20 @@ const App: React.FC = () => {
       <Router>
           <div className="App">
             <OceanBackground />
-        <Header />
+            <Header />
             <main>
-          <Routes>
-                <Route path="/" element={<Home />} />
+              <Routes>
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
                 <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
                 <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
                 <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/data-center" element={<DataCenter />} />
-                <Route path="/intelligent-center" element={<IntelligentCenter />} />
-                <Route path="/underwater" element={<UnderWaterSystem />} />
+                <Route path="/data-center" element={<PrivateRoute><DataCenter /></PrivateRoute>} />
+                <Route path="/intelligent-center" element={<PrivateRoute><IntelligentCenter /></PrivateRoute>} />
+                <Route path="/underwater" element={<PrivateRoute><UnderWaterSystem /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 <Route path="/admin" element={<PrivateRoute admin={true}><AdminManagement /></PrivateRoute>} />
-          </Routes>
+              </Routes>
             </main>
           </div>
       </Router>

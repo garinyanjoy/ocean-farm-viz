@@ -11,6 +11,7 @@ type AuthContextType = {
   logout: () => void;
   isAdmin: boolean;
   isInitialized: boolean; // 添加初始化状态标志
+  isAuthenticated: boolean;
 };
 
 // 创建带有默认值的AuthContext
@@ -19,7 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   isAdmin: false,
-  isInitialized: false
+  isInitialized: false,
+  isAuthenticated: false
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -73,7 +75,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     isAdmin,
-    isInitialized
+    isInitialized,
+    isAuthenticated: user !== null
   };
 
   return (

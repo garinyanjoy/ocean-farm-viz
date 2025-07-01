@@ -23,8 +23,41 @@ CORS(app)
 
 # 使用SQLite作为数据库
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ocean-monitor.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 print("使用SQLite数据库")
 db.init_app(app)
+
+# 初始化数据库和添加默认管理员账户
+def initialize_database():
+    with app.app_context():
+        # 创建所有数据库表
+        db.create_all()
+        
+        # 检查是否已存在管理员账户
+        admin_exists = User.query.filter_by(role="admin").first() is not None
+        
+        if not admin_exists:
+            # 创建默认管理员账户
+            default_admin = User(
+                username="admin",
+                password_hash=generate_password_hash("admin123"),
+                role="admin"
+            )
+            db.session.add(default_admin)
+            
+            # 创建默认普通用户
+            default_user = User(
+                username="user",
+                password_hash=generate_password_hash("user123"),
+                role="user"
+            )
+            db.session.add(default_user)
+            
+            db.session.commit()
+            print("已创建默认管理员账户和普通用户账户")
+
+# 在应用启动时初始化数据库
+initialize_database()
 
 # 登录接口
 @app.route("/api/login", methods=["POST"])

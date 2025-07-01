@@ -34,6 +34,8 @@ import {
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import ControlPanel from '../components/ControlPanel';
+import { useAuth } from '../auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // 配置axios默认设置
 axios.defaults.withCredentials = false;
@@ -133,6 +135,8 @@ const VIDEO_MAPPINGS: Record<string, number> = {
 };
 
 const Home: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [monitoringData, setMonitoringData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,10 +168,19 @@ const Home: React.FC = () => {
     return () => clearInterval(t);
   }, []);
 
+  // 处理未登录用户的操作
+  const handleUnauthorizedAction = () => {
+    navigate('/login');
+  };
+
   const handleControlChange = (control: string, value: boolean | number) => {
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
+    
     if (typeof value === 'boolean') {
       setControls(prev => ({ ...prev, [control]: value }));
-      // 如果关闭某个控制，返回默认视频
       if (!value) {
         setCurrentVideo(DEFAULT_LIVE_VIDEO);
         setIsLiveStream(true);
@@ -178,6 +191,10 @@ const Home: React.FC = () => {
   };
 
   const handleLightIntensityChange = (_event: Event, newValue: number | number[]) => {
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
     setLightIntensity(Array.isArray(newValue) ? newValue[0] : newValue);
   };
   
@@ -238,9 +255,12 @@ const Home: React.FC = () => {
   }, []);
 
   const handleVideoChange = (videoUrl: string) => {
-    console.log("切换视频到:", videoUrl); // 添加日志帮助调试
+    if (!isAuthenticated) {
+      handleUnauthorizedAction();
+      return;
+    }
+    console.log("切换视频到:", videoUrl);
     setCurrentVideo(videoUrl);
-    // 如果是视频6或7（历史记录），则设置为非实时流
     setIsLiveStream(!videoUrl.includes('6.mp4') && !videoUrl.includes('7.mp4'));
   };
 
@@ -279,6 +299,13 @@ const Home: React.FC = () => {
         智慧海洋牧场可视化系统
       </Typography>
       
+      {/* 添加登录提示 */}
+      {!isAuthenticated && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          请登录以使用完整功能
+        </Alert>
+      )}
+      
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
         <Button 
           variant="contained" 
@@ -288,6 +315,7 @@ const Home: React.FC = () => {
             background: 'linear-gradient(45deg, #1e88e5, #00acc1)',
             boxShadow: '0 4px 12px rgba(0,150,255,0.2)',
           }}
+          disabled={!isAuthenticated}
         >
           测试API连接
         </Button>
@@ -302,6 +330,7 @@ const Home: React.FC = () => {
               backgroundColor: 'rgba(0,150,255,0.1)',
             },
           }}
+          disabled={!isAuthenticated}
         >
           刷新监控数据
         </Button>
@@ -342,6 +371,7 @@ const Home: React.FC = () => {
                       size="small"
                       onClick={handleReturnToLive}
                       startIcon={<VideocamIcon />}
+                      disabled={!isAuthenticated}
                     >
                       返回实时监控
                     </Button>
