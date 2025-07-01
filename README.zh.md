@@ -26,7 +26,7 @@
 - Windows 10+
 - Node.js 14+
 - Python 3.8+
-- MySQL 5.7+
+- SQLite (已包含在Python标准库中)
 
 ### 默认账号
 - 管理员账号：admin
@@ -50,7 +50,7 @@ ocean-farm-viz/
 ```
 
 ## 注意事项
-- 首次运行前请确保已创建并配置好MySQL数据库
+- 系统现在使用SQLite数据库，首次运行会自动创建`ocean-monitor.db`文件。
 - 系统使用的示例数据位于`data`目录下
 - 如需导入自定义数据，可以修改相应的CSV文件
 

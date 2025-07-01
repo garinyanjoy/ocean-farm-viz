@@ -1,4 +1,18 @@
 {
+  "name": "ocean-farm-viz-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "start": "npm run start -w client",
+    "install:client": "npm install --prefix client",
+    "install:server": "pip install -r server/requirements.txt",
+    "install:all": "npm run install:client && npm run install:server",
+    "dev": "npm run start -w client & (cd server && python app.py)"
+  },
   "dependencies": {
     "html-to-image": "^1.11.13"
   }
